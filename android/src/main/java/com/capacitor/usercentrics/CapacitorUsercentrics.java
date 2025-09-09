@@ -3,20 +3,21 @@ package com.capacitor.usercentrics;
 import android.app.Activity;
 import android.content.Context;
 import com.getcapacitor.JSObject;
+import com.getcapacitor.JSArray;
 import com.getcapacitor.Logger;
-import com.usercentrics.sdk.Usercentrics;
-import com.usercentrics.sdk.UsercentricsBanner;
-import com.usercentrics.sdk.UsercentricsConsentUserResponse;
-import com.usercentrics.sdk.UsercentricsOptions;
-import com.usercentrics.sdk.UsercentricsReadyStatus;
-import com.usercentrics.sdk.models.consent.UsercentricsConsent;
-import com.usercentrics.sdk.models.consent.UsercentricsServiceConsent;
+import com.usercentrics.sdk.*;
+import com.usercentrics.sdk.errors.UsercentricsError;
+import com.usercentrics.sdk.models.common.UsercentricsLoggerLevel;
+import com.usercentrics.sdk.models.settings.UsercentricsConsentType;
+import com.usercentrics.sdk.services.tcf.interfaces.TCFData;
+
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class CapacitorUsercentrics {
 
-    private Usercentrics usercentrics;
+    private UsercentricsSDK usercentricsSDK;
     private Context context;
 
     public CapacitorUsercentrics() {
@@ -71,97 +72,93 @@ public class CapacitorUsercentrics {
                 return;
             }
 
-            UsercentricsOptions.Builder optionsBuilder = new UsercentricsOptions.Builder(settingsId);
-
+            // Use the simple constructor as shown in the documentation
+            UsercentricsOptions usercentricsOptions = new UsercentricsOptions(settingsId);
+            
+            // Apply additional options if provided
             if (options.has("defaultLanguage")) {
-                optionsBuilder.setDefaultLanguage(options.getString("defaultLanguage"));
+                usercentricsOptions.setDefaultLanguage(options.getString("defaultLanguage"));
             }
             if (options.has("version")) {
-                optionsBuilder.setVersion(options.getString("version"));
+                usercentricsOptions.setVersion(options.getString("version"));
             }
             if (options.has("timeoutMillis")) {
-                optionsBuilder.setTimeoutMillis(options.getInt("timeoutMillis"));
+                usercentricsOptions.setTimeoutMillis(options.getInt("timeoutMillis"));
             }
             if (options.has("loggerLevel")) {
                 String level = options.getString("loggerLevel");
                 switch (level) {
                     case "debug":
-                        optionsBuilder.setLoggerLevel(UsercentricsOptions.LoggerLevel.DEBUG);
+                        usercentricsOptions.setLoggerLevel(UsercentricsLoggerLevel.DEBUG);
                         break;
                     case "warning":
-                        optionsBuilder.setLoggerLevel(UsercentricsOptions.LoggerLevel.WARNING);
+                        usercentricsOptions.setLoggerLevel(UsercentricsLoggerLevel.WARNING);
                         break;
                     case "error":
-                        optionsBuilder.setLoggerLevel(UsercentricsOptions.LoggerLevel.ERROR);
+                        usercentricsOptions.setLoggerLevel(UsercentricsLoggerLevel.ERROR);
                         break;
                     case "none":
-                        optionsBuilder.setLoggerLevel(UsercentricsOptions.LoggerLevel.NONE);
+                        usercentricsOptions.setLoggerLevel(UsercentricsLoggerLevel.NONE);
                         break;
                 }
             }
             if (options.has("rulesetId")) {
-                optionsBuilder.setRulesetId(options.getString("rulesetId"));
+                usercentricsOptions.setRuleSetId(options.getString("rulesetId"));
             }
             if (options.has("consentMediation")) {
-                optionsBuilder.setConsentMediation(options.getBool("consentMediation"));
+                usercentricsOptions.setConsentMediation(options.getBool("consentMediation"));
             }
 
-            UsercentricsOptions usercentricsOptions = optionsBuilder.build();
-            usercentrics = Usercentrics.initialize(context, usercentricsOptions);
+            Usercentrics.initialize(context, usercentricsOptions);
             
             callback.onSuccess();
         } catch (Exception e) {
-            Logger.error("Usercentrics configure error", e.getMessage());
+            Logger.error("Usercentrics configure error", e);
             callback.onError(e.getMessage());
         }
     }
 
     public void isReady(ReadyCallback callback) {
         try {
-            if (usercentrics == null) {
-                callback.onError("Usercentrics not configured");
-                return;
-            }
 
-            usercentrics.isReady(new Usercentrics.UsercentricsReadyCallback() {
-                @Override
-                public void onSuccess(UsercentricsReadyStatus status) {
+            Usercentrics.isReady(
+                (UsercentricsReadyStatus status) -> {
+                    usercentricsSDK = Usercentrics.getInstance();
                     JSObject result = new JSObject();
-                    result.put("shouldCollectConsent", status.shouldCollectConsent);
-                    result.put("usercentricsReady", status.usercentricsReady);
-                    result.put("controllerId", status.controllerId);
+                    result.put("shouldCollectConsent", status.getShouldCollectConsent());
+                    result.put("controllerId", usercentricsSDK.getControllerId());
                     
-                    JSObject consentsArray = new JSObject();
-                    for (UsercentricsServiceConsent consent : status.consents) {
+                    // Convert consents list to array of objects
+                    JSArray consentsArr = new JSArray();
+                    for (UsercentricsServiceConsent consent : status.getConsents()) {
                         JSObject consentObj = new JSObject();
                         consentObj.put("templateId", consent.getTemplateId());
-                        consentObj.put("status", consent.isConsentGiven());
-                        consentObj.put("type", consent.getType().toString().toLowerCase());
-                        consentObj.put("timestamp", consent.getTimestamp());
+                        consentObj.put("status", consent.getStatus());
                         consentObj.put("dataProcessor", consent.getDataProcessor());
                         consentObj.put("version", consent.getVersion());
                         consentObj.put("isEssential", consent.isEssential());
-                        consentsArray.put(consent.getTemplateId(), consentObj);
+                        consentsArr.put(consentObj);
                     }
-                    result.put("consents", consentsArray);
+                    result.put("consents", consentsArr);
                     
                     callback.onSuccess(result);
-                }
+                    return null;
+                },
+                (UsercentricsError error) -> {
+                    callback.onError(error.getMessage());
 
-                @Override
-                public void onFailure(String error) {
-                    callback.onError(error);
+                    return null;
                 }
-            });
+            );
         } catch (Exception e) {
-            Logger.error("Usercentrics isReady error", e.getMessage());
+            Logger.error("Usercentrics isReady error", e);
             callback.onError(e.getMessage());
         }
     }
 
     public void showBanner(BannerCallback callback) {
         try {
-            if (usercentrics == null) {
+            if (usercentricsSDK == null) {
                 callback.onError("Usercentrics not configured");
                 return;
             }
@@ -171,132 +168,406 @@ public class CapacitorUsercentrics {
                 return;
             }
 
-            UsercentricsBanner banner = new UsercentricsBanner((Activity) context);
-            banner.showFirstLayer(new UsercentricsBanner.UsercentricsBannerCallback() {
-                @Override
-                public void onSuccess(UsercentricsConsentUserResponse response) {
-                    JSObject result = new JSObject();
-                    result.put("userInteraction", response.isUserInteraction());
-                    
-                    JSObject consentsArray = new JSObject();
-                    for (UsercentricsServiceConsent consent : response.getConsents()) {
-                        JSObject consentObj = new JSObject();
-                        consentObj.put("templateId", consent.getTemplateId());
-                        consentObj.put("status", consent.isConsentGiven());
-                        consentObj.put("type", consent.getType().toString().toLowerCase());
-                        consentObj.put("timestamp", consent.getTimestamp());
-                        consentObj.put("dataProcessor", consent.getDataProcessor());
-                        consentObj.put("version", consent.getVersion());
-                        consentObj.put("isEssential", consent.isEssential());
-                        consentsArray.put(consent.getTemplateId(), consentObj);
-                    }
-                    result.put("consents", consentsArray);
-                    
-                    callback.onSuccess(result);
-                }
-
-                @Override
-                public void onFailure(String error) {
-                    callback.onError(error);
-                }
+            Activity activity = (Activity) context;
+            activity.runOnUiThread(() -> {
+                UsercentricsBanner banner = new UsercentricsBanner(activity, null);
+                banner.showFirstLayer((UsercentricsConsentUserResponse response) -> {
+                        JSObject result = new JSObject();
+                        
+                        String userInteraction = response.getUserInteraction().toString();
+                        result.put("userInteraction", userInteraction);
+                        result.put("controllerId", response.getControllerId());
+                        
+                        JSArray consentsArr = new JSArray();
+                        for (UsercentricsServiceConsent consent : response.getConsents()) {
+                            JSObject consentObj = new JSObject();
+                            consentObj.put("templateId", consent.getTemplateId());
+                            consentObj.put("status", consent.getStatus());
+                            consentObj.put("dataProcessor", consent.getDataProcessor());
+                            consentObj.put("version", consent.getVersion());
+                            consentObj.put("isEssential", consent.isEssential());
+                            consentsArr.put(consentObj);
+                        }
+                        result.put("consents", consentsArr);
+                        
+                        callback.onSuccess(result);
+                        return null;
+                    });
             });
         } catch (Exception e) {
-            Logger.error("Usercentrics showBanner error", e.getMessage());
+            Logger.error("Usercentrics showBanner error", e);
+            callback.onError(e.getMessage());
+        }
+    }
+
+    public void showSecondLayer(BannerCallback callback) {
+        try {
+            if (usercentricsSDK == null) {
+                callback.onError("Usercentrics not configured");
+                return;
+            }
+
+            if (!(context instanceof Activity)) {
+                callback.onError("Context must be an Activity to show banner");
+                return;
+            }
+
+            Activity activity = (Activity) context;
+            activity.runOnUiThread(() -> {
+                UsercentricsBanner banner = new UsercentricsBanner(activity, null);
+                banner.showSecondLayer((UsercentricsConsentUserResponse response) -> {
+                        JSObject result = new JSObject();
+                        
+                        String userInteraction = response.getUserInteraction().toString();
+                        result.put("userInteraction", userInteraction);
+                        result.put("controllerId", response.getControllerId());
+                        
+                        JSArray consentsArr = new JSArray();
+                        for (UsercentricsServiceConsent consent : response.getConsents()) {
+                            JSObject consentObj = new JSObject();
+                            consentObj.put("templateId", consent.getTemplateId());
+                            consentObj.put("status", consent.getStatus());
+                            consentObj.put("dataProcessor", consent.getDataProcessor());
+                            consentObj.put("version", consent.getVersion());
+                            consentObj.put("isEssential", consent.isEssential());
+                            consentsArr.put(consentObj);
+                        }
+                        result.put("consents", consentsArr);
+                        
+                        callback.onSuccess(result);
+                        return null;
+                    });
+            });
+        } catch (Exception e) {
+            Logger.error("Usercentrics showSecondLayer error", e);
             callback.onError(e.getMessage());
         }
     }
 
     public void reset(Callback callback) {
         try {
-            if (usercentrics == null) {
+            if (usercentricsSDK == null) {
                 callback.onError("Usercentrics not configured");
                 return;
             }
 
-            usercentrics.reset();
+            Usercentrics.reset();
             callback.onSuccess();
         } catch (Exception e) {
-            Logger.error("Usercentrics reset error", e.getMessage());
+            Logger.error("Usercentrics reset error", e);
             callback.onError(e.getMessage());
         }
     }
 
     public void getConsents(ConsentsCallback callback) {
         try {
-            if (usercentrics == null) {
+            if (usercentricsSDK == null) {
                 callback.onError("Usercentrics not configured");
                 return;
             }
 
-            List<UsercentricsServiceConsent> consents = usercentrics.getConsents();
-            JSObject consentsArray = new JSObject();
+            List<UsercentricsServiceConsent> consents = usercentricsSDK.getConsents();
+            JSArray consentsArr = new JSArray();
             
             for (UsercentricsServiceConsent consent : consents) {
                 JSObject consentObj = new JSObject();
                 consentObj.put("templateId", consent.getTemplateId());
-                consentObj.put("status", consent.isConsentGiven());
-                consentObj.put("type", consent.getType().toString().toLowerCase());
-                consentObj.put("timestamp", consent.getTimestamp());
+                consentObj.put("status", consent.getStatus());
                 consentObj.put("dataProcessor", consent.getDataProcessor());
                 consentObj.put("version", consent.getVersion());
                 consentObj.put("isEssential", consent.isEssential());
-                consentsArray.put(consent.getTemplateId(), consentObj);
+                consentsArr.put(consentObj);
             }
             
-            callback.onSuccess(consentsArray);
+            JSObject result = new JSObject();
+            result.put("consents", consentsArr);
+            callback.onSuccess(result);
         } catch (Exception e) {
-            Logger.error("Usercentrics getConsents error", e.getMessage());
+            Logger.error("Usercentrics getConsents error", e);
             callback.onError(e.getMessage());
         }
     }
 
     public void getCMPData(CMPDataCallback callback) {
         try {
-            if (usercentrics == null) {
+            if (usercentricsSDK == null) {
                 callback.onError("Usercentrics not configured");
                 return;
             }
 
-            Map<String, Object> cmpData = usercentrics.getCMPData();
+            Object cmpData = usercentricsSDK.getCMPData();
             JSObject result = new JSObject();
-            
-            for (Map.Entry<String, Object> entry : cmpData.entrySet()) {
-                result.put(entry.getKey(), entry.getValue());
-            }
+            result.put("cmpData", cmpData);
             
             callback.onSuccess(result);
         } catch (Exception e) {
-            Logger.error("Usercentrics getCMPData error", e.getMessage());
+            Logger.error("Usercentrics getCMPData error", e);
             callback.onError(e.getMessage());
         }
     }
 
     public void restoreUserSession(String userSession, Callback callback) {
         try {
-            if (usercentrics == null) {
+            if (usercentricsSDK == null) {
                 callback.onError("Usercentrics not configured");
                 return;
             }
 
-            usercentrics.restoreUserSession(userSession);
-            callback.onSuccess();
+            usercentricsSDK.restoreUserSession(usercentricsSDK.getControllerId(),
+                (UsercentricsReadyStatus status) -> {
+                    callback.onSuccess();
+                    return null;
+                },
+                (UsercentricsError error) -> {
+                    callback.onError(error.getMessage());
+                    return null;
+                }
+            );
         } catch (Exception e) {
-            Logger.error("Usercentrics restoreUserSession error", e.getMessage());
+            Logger.error("Usercentrics restoreUserSession error", e);
             callback.onError(e.getMessage());
         }
     }
 
     public void saveUserSession(SessionCallback callback) {
         try {
-            if (usercentrics == null) {
+            if (usercentricsSDK == null) {
                 callback.onError("Usercentrics not configured");
                 return;
             }
 
-            String session = usercentrics.saveUserSession();
+            String session = usercentricsSDK.getUserSessionData();
             callback.onSuccess(session);
         } catch (Exception e) {
-            Logger.error("Usercentrics saveUserSession error", e.getMessage());
+            Logger.error("Usercentrics saveUserSession error", e);
+            callback.onError(e.getMessage());
+        }
+    }
+
+    public void applyConsent(JSObject consentsData, Callback callback) {
+        try {
+            if (usercentricsSDK == null) {
+                callback.onError("Usercentrics not configured");
+                return;
+            }
+
+            // Convert JSObject consents back to List<UsercentricsServiceConsent>
+            List<UsercentricsServiceConsent> consents = new ArrayList<>();
+            
+            // Iterate through the consents object
+            for (Iterator<String> it = consentsData.keys(); it.hasNext(); ) {
+                String key = it.next();
+                JSObject consentData = consentsData.getJSObject(key);
+                if (consentData != null) {
+                    String templateId = consentData.getString("templateId");
+                    boolean status = consentData.getBool("status");
+                    String dataProcessor = consentData.getString("dataProcessor");
+                    String version = consentData.getString("version");
+                    
+                    // Create a UsercentricsServiceConsent object
+                    UsercentricsServiceConsent consent = new UsercentricsServiceConsent(
+                        templateId, 
+                        status, 
+                        new ArrayList<>(), // history - empty list
+                        null, // type - null for now
+                        dataProcessor, 
+                        version, 
+                        false // isEssential - default to false
+                    );
+                    consents.add(consent);
+                }
+            }
+            
+            // Apply consent to each service
+            applyConsentToSDKs(consents);
+            
+            callback.onSuccess();
+        } catch (Exception e) {
+            Logger.error("Usercentrics applyConsent error", e);
+            callback.onError(e.getMessage());
+        }
+    }
+
+    private void applyConsentToSDKs(List<UsercentricsServiceConsent> consents) {
+        if (consents == null) return;
+        
+        for (UsercentricsServiceConsent service : consents) {
+            String templateId = service.getTemplateId();
+            boolean status = service.getStatus();
+            
+            // Apply consent based on template ID
+            switch (templateId) {
+                case "diWdt4yLB": // Google Analytics for Firebase Template ID
+                    applyFirebaseConsent(status);
+                    break;
+                case "x-XXXxXx": // Example: Unity Ads Template ID
+                    applyUnityAdsConsent(status);
+                    break;
+                case "x-xXX-Xx": // Example: AppLovin Template ID
+                    applyAppLovinConsent(status);
+                    break;
+                // Add more cases for other SDKs as needed
+                default:
+                    Logger.warn("Unknown service template ID: " + templateId);
+                    break;
+            }
+        }
+    }
+
+    private void applyFirebaseConsent(boolean consent) {
+        try {
+            // Example implementation for Firebase Analytics Consent Mode
+            // Note: This is a placeholder - you'll need to implement actual Firebase integration
+            Logger.info("Applying Firebase consent: " + consent);
+            
+            // Example Firebase consent application:
+            // Firebase.analytics.setConsent {
+            //     analyticsStorage(if (consent) ConsentStatus.GRANTED else ConsentStatus.DENIED)
+            //     adStorage(if (consent) ConsentStatus.GRANTED else ConsentStatus.DENIED)
+            // }
+            
+        } catch (Exception e) {
+            Logger.error("Error applying Firebase consent", e);
+        }
+    }
+
+    private void applyUnityAdsConsent(boolean consent) {
+        try {
+            // Example implementation for Unity Ads
+            Logger.info("Applying Unity Ads consent: " + consent);
+            
+            // Example Unity Ads consent application:
+            // if (consent) {
+            //     UnityAds.initialize(this, "your-game-id", this, true);
+            // }
+            
+        } catch (Exception e) {
+            Logger.error("Error applying Unity Ads consent", e);
+        }
+    }
+
+    private void applyAppLovinConsent(boolean consent) {
+        try {
+            // Example implementation for AppLovin
+            Logger.info("Applying AppLovin consent: " + consent);
+            
+            // Example AppLovin consent application:
+            // if (consent) {
+            //     AppLovinSdk.getInstance().setPrivacySettings(privacySettings);
+            // }
+            
+        } catch (Exception e) {
+            Logger.error("Error applying AppLovin consent", e);
+        }
+    }
+
+    public void getTCFData(CMPDataCallback callback) {
+        try {
+            if (usercentricsSDK == null) {
+                callback.onError("Usercentrics not configured");
+                return;
+            }
+
+            usercentricsSDK.getTCFData((TCFData tcfData) -> {
+                    JSObject result = new JSObject();
+                    result.put("tcString", tcfData.getTcString());
+                    result.put("features", tcfData.getFeatures());
+                    result.put("purposes", tcfData.getPurposes());
+                    result.put("specialFeatures", tcfData.getSpecialFeatures());
+                    result.put("specialPurposes", tcfData.getSpecialPurposes());
+                    result.put("stacks", tcfData.getStacks());
+                    result.put("thirdPartyCount", tcfData.getThirdPartyCount());
+                    result.put("vendors", tcfData.getVendors());
+                    
+                    callback.onSuccess(result);
+                    return null;
+                });
+        } catch (Exception e) {
+            Logger.error("Usercentrics getTCFData error", e);
+            callback.onError(e.getMessage());
+        }
+    }
+
+    public void acceptAll(Callback callback) {
+        try {
+            if (usercentricsSDK == null) {
+                callback.onError("Usercentrics not configured");
+                return;
+            }
+
+            List<UsercentricsServiceConsent> consents = usercentricsSDK.acceptAll(UsercentricsConsentType.EXPLICIT);
+            applyConsentToSDKs(consents);
+            
+            callback.onSuccess();
+        } catch (Exception e) {
+            Logger.error("Usercentrics acceptAll error", e);
+            callback.onError(e.getMessage());
+        }
+    }
+
+    public void denyAll(Callback callback) {
+        try {
+            if (usercentricsSDK == null) {
+                callback.onError("Usercentrics not configured");
+                return;
+            }
+
+            List<UsercentricsServiceConsent> consents = usercentricsSDK.denyAll(UsercentricsConsentType.EXPLICIT);
+            applyConsentToSDKs(consents);
+            
+            callback.onSuccess();
+        } catch (Exception e) {
+            Logger.error("Usercentrics denyAll error", e);
+            callback.onError(e.getMessage());
+        }
+    }
+
+    public void saveConsent(JSObject consentsData, Callback callback) {
+        try {
+            if (usercentricsSDK == null) {
+                callback.onError("Usercentrics not configured");
+                return;
+            }
+
+            // Convert JSObject consents back to List<UserDecision>
+            List<UserDecision> decisions = new ArrayList<>();
+            List<UsercentricsServiceConsent> consents = new ArrayList<>();
+            
+            // Iterate through the consents object
+            for (Iterator<String> it = consentsData.keys(); it.hasNext(); ) {
+                String key = it.next();
+                JSObject consentData = consentsData.getJSObject(key);
+                if (consentData != null) {
+                    String templateId = consentData.getString("templateId");
+                    boolean status = consentData.getBool("status");
+                    String dataProcessor = consentData.getString("dataProcessor");
+                    String version = consentData.getString("version");
+                    
+                    // Create a UsercentricsServiceConsent object for applyConsentToSDKs
+                    UsercentricsServiceConsent consent = new UsercentricsServiceConsent(
+                        templateId, 
+                        status, 
+                        new ArrayList<>(), // history - empty list
+                        null, // type - null for now
+                        dataProcessor, 
+                        version, 
+                        false // isEssential - default to false
+                    );
+                    consents.add(consent);
+                    
+                    // Create a UserDecision object for saveDecisions
+                    UserDecision decision = new UserDecision(templateId, status);
+                    decisions.add(decision);
+                }
+            }
+            
+            // Save consent and apply to SDKs
+            usercentricsSDK.saveDecisions(decisions, UsercentricsConsentType.EXPLICIT);
+            applyConsentToSDKs(consents);
+            
+            callback.onSuccess();
+        } catch (Exception e) {
+            Logger.error("Usercentrics saveConsent error", e);
             callback.onError(e.getMessage());
         }
     }

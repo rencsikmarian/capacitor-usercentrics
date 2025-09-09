@@ -14,12 +14,15 @@ public class CapacitorUsercentricsPlugin extends Plugin {
     @Override
     public void load() {
         super.load();
-        implementation.setContext(getContext());
+        implementation.setContext(getActivity());
     }
 
     @PluginMethod
     public void configure(PluginCall call) {
         JSObject options = call.getObject("options");
+        if (options == null) {
+            options = call.getData();
+        }
         implementation.configure(options, new CapacitorUsercentrics.Callback() {
             @Override
             public void onSuccess() {
@@ -51,6 +54,21 @@ public class CapacitorUsercentricsPlugin extends Plugin {
     @PluginMethod
     public void showBanner(PluginCall call) {
         implementation.showBanner(new CapacitorUsercentrics.BannerCallback() {
+            @Override
+            public void onSuccess(JSObject result) {
+                call.resolve(result);
+            }
+
+            @Override
+            public void onError(String error) {
+                call.reject(error);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void showSecondLayer(PluginCall call) {
+        implementation.showSecondLayer(new CapacitorUsercentrics.BannerCallback() {
             @Override
             public void onSuccess(JSObject result) {
                 call.resolve(result);
@@ -109,6 +127,21 @@ public class CapacitorUsercentricsPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void getTCFData(PluginCall call) {
+        implementation.getTCFData(new CapacitorUsercentrics.CMPDataCallback() {
+            @Override
+            public void onSuccess(JSObject data) {
+                call.resolve(data);
+            }
+
+            @Override
+            public void onError(String error) {
+                call.reject(error);
+            }
+        });
+    }
+
+    @PluginMethod
     public void restoreUserSession(PluginCall call) {
         String userSession = call.getString("userSession");
         implementation.restoreUserSession(userSession, new CapacitorUsercentrics.Callback() {
@@ -132,6 +165,74 @@ public class CapacitorUsercentricsPlugin extends Plugin {
                 JSObject result = new JSObject();
                 result.put("session", session);
                 call.resolve(result);
+            }
+
+            @Override
+            public void onError(String error) {
+                call.reject(error);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void acceptAll(PluginCall call) {
+        implementation.acceptAll(new CapacitorUsercentrics.Callback() {
+            @Override
+            public void onSuccess() {
+                call.resolve();
+            }
+
+            @Override
+            public void onError(String error) {
+                call.reject(error);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void denyAll(PluginCall call) {
+        implementation.denyAll(new CapacitorUsercentrics.Callback() {
+            @Override
+            public void onSuccess() {
+                call.resolve();
+            }
+
+            @Override
+            public void onError(String error) {
+                call.reject(error);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void applyConsent(PluginCall call) {
+        JSObject consents = call.getObject("consents");
+        if (consents == null) {
+            consents = call.getData();
+        }
+        implementation.applyConsent(consents, new CapacitorUsercentrics.Callback() {
+            @Override
+            public void onSuccess() {
+                call.resolve();
+            }
+
+            @Override
+            public void onError(String error) {
+                call.reject(error);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void saveConsent(PluginCall call) {
+        JSObject consents = call.getObject("consents");
+        if (consents == null) {
+            consents = call.getData();
+        }
+        implementation.saveConsent(consents, new CapacitorUsercentrics.Callback() {
+            @Override
+            public void onSuccess() {
+                call.resolve();
             }
 
             @Override

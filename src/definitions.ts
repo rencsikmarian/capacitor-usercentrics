@@ -11,32 +11,39 @@ export interface UsercentricsOptions {
 export interface UsercentricsConsent {
   templateId: string;
   status: boolean;
-  type: 'explicit' | 'implicit';
-  timestamp: number;
+  type?: 'explicit' | 'implicit' | string;
+  timestamp?: number;
   dataProcessor: string;
   version: string;
-  isEssential: boolean;
+  isEssential?: boolean;
 }
 
 export interface UsercentricsReadyStatus {
   shouldCollectConsent: boolean;
   consents: UsercentricsConsent[];
-  usercentricsReady: boolean;
-  controllerId: string;
+  usercentricsReady?: boolean;
+  controllerId?: string;
 }
 
 export interface UsercentricsBannerResult {
   consents: UsercentricsConsent[];
-  userInteraction: boolean;
+  userInteraction: string;
+  controllerId?: string;
 }
 
 export interface CapacitorUsercentricsPlugin {
   configure(options: UsercentricsOptions): Promise<void>;
   isReady(): Promise<UsercentricsReadyStatus>;
   showBanner(): Promise<UsercentricsBannerResult>;
+  showSecondLayer(): Promise<UsercentricsBannerResult>;
   reset(): Promise<void>;
   getConsents(): Promise<UsercentricsConsent[]>;
   getCMPData(): Promise<any>;
+  getTCFData(): Promise<any>;
+  acceptAll(): Promise<void>;
+  denyAll(): Promise<void>;
+  applyConsent(consents: Record<string, UsercentricsConsent>): Promise<void>;
+  saveConsent(consents: Record<string, UsercentricsConsent>): Promise<void>;
   restoreUserSession(userSession: string): Promise<void>;
-  saveUserSession(): Promise<string>;
+  saveUserSession(): Promise<{ session: string }>;
 }

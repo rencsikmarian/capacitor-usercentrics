@@ -43,8 +43,9 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
       this.usercentrics = window.usercentrics;
       this.isConfigured = true;
       resolve();
-    } catch (error) {
-      reject(error.message || 'Failed to initialize Usercentrics');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      reject(message || 'Failed to initialize Usercentrics');
     }
   }
 
@@ -79,7 +80,28 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
       this.usercentrics.showFirstLayer((response: any) => {
         const result: UsercentricsBannerResult = {
           consents: this.convertConsents(response.consents),
-          userInteraction: response.userInteraction
+          userInteraction: String(response.userInteraction),
+          controllerId: response.controllerId
+        };
+        resolve(result);
+      }, (error: string) => {
+        reject(error);
+      });
+    });
+  }
+
+  async showSecondLayer(): Promise<UsercentricsBannerResult> {
+    return new Promise((resolve, reject) => {
+      if (!this.isConfigured || !this.usercentrics) {
+        reject(new Error('Usercentrics not configured'));
+        return;
+      }
+
+      this.usercentrics.showSecondLayer((response: any) => {
+        const result: UsercentricsBannerResult = {
+          consents: this.convertConsents(response.consents),
+          userInteraction: String(response.userInteraction),
+          controllerId: response.controllerId
         };
         resolve(result);
       }, (error: string) => {
@@ -113,6 +135,14 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
     return this.usercentrics.getCMPData();
   }
 
+  async getTCFData(): Promise<any> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+
+    return this.usercentrics.getTCFData();
+  }
+
   async restoreUserSession(userSession: string): Promise<void> {
     if (!this.isConfigured || !this.usercentrics) {
       throw new Error('Usercentrics not configured');
@@ -121,12 +151,45 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
     this.usercentrics.restoreUserSession(userSession);
   }
 
-  async saveUserSession(): Promise<string> {
+  async saveUserSession(): Promise<{ session: string }> {
     if (!this.isConfigured || !this.usercentrics) {
       throw new Error('Usercentrics not configured');
     }
 
-    return this.usercentrics.saveUserSession();
+    return { session: this.usercentrics.saveUserSession() };
+  }
+
+  async acceptAll(): Promise<void> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    this.usercentrics.acceptAll();
+  }
+
+  async denyAll(): Promise<void> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    this.usercentrics.denyAll();
+  }
+
+  async applyConsent(consents: Record<string, UsercentricsConsent>): Promise<void> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    // On web, we can consider "apply" as saving to runtime consumers only; if SDK exposes a method, wire it here.
+    // No-op fallback.
+    void consents;
+  }
+
+  async saveConsent(consents: Record<string, UsercentricsConsent>): Promise<void> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    const decisions = Object.values(consents).map(c => ({ templateId: c.templateId, status: c.status }));
+    if (typeof this.usercentrics.saveDecisions === 'function') {
+      this.usercentrics.saveDecisions(decisions, 'explicit');
+    }
   }
 
   private convertConsents(consents: any[]): UsercentricsConsent[] {
