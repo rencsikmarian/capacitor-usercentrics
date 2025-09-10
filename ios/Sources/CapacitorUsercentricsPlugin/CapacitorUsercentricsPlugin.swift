@@ -28,6 +28,24 @@ public class CapacitorUsercentricsPlugin: CAPPlugin, CAPBridgedPlugin {
     ]
     private let implementation = CapacitorUsercentrics()
 
+    override public func load() {
+        super.load()
+        self.implementation.plugin = self
+    }
+
+    func getRootVC() -> UIViewController? {
+        var window: UIWindow? = UIApplication.shared.delegate?.window ?? nil
+
+        if window == nil {
+            let scene: UIWindowScene? = UIApplication.shared.connectedScenes.first as? UIWindowScene
+            window = scene?.windows.filter({$0.isKeyWindow}).first
+            if window == nil {
+                window = scene?.windows.first
+            }
+        }
+        return window?.rootViewController
+    }
+
     @objc func configure(_ call: CAPPluginCall) {
         guard let options = call.getObject("options") else {
             call.reject("Options parameter is required")

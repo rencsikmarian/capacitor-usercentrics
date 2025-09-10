@@ -4,9 +4,10 @@ import UsercentricsUI
 
 @objc public class CapacitorUsercentrics: NSObject {
     
+    weak var plugin: CapacitorUsercentricsPlugin?
+
     private var usercentrics: UsercentricsSDK?
     
-    // Result types
     public enum Result<T> {
         case success(T)
         case failure(String)
@@ -26,7 +27,7 @@ import UsercentricsUI
             return
         }
         
-        var usercentricsOptions = UsercentricsOptions(settingsId: settingsId)
+        let usercentricsOptions = UsercentricsOptions(settingsId: settingsId)
         
         if let defaultLanguage = options["defaultLanguage"] as? String {
             usercentricsOptions.defaultLanguage = defaultLanguage
@@ -73,8 +74,8 @@ import UsercentricsUI
             
             let result: [String: Any] = [
                 "shouldCollectConsent": status.shouldCollectConsent,
-                "usercentricsReady": "",
-                "controllerId": "",
+                "usercentricsReady": true,
+                "controllerId": UsercentricsCore.shared.getControllerId(),
                 "consents": self.convertConsents(status.consents)
             ]
             
@@ -87,30 +88,37 @@ import UsercentricsUI
     }
     
     public func showBanner(completion: @escaping BannerCallback) {
-        guard let usercentrics = self.usercentrics else {
+        guard self.usercentrics != nil else {
             completion(.failure("Usercentrics not configured"))
             return
         }
         
-        guard let viewController = UIApplication.shared.windows.first?.rootViewController else {
-            completion(.failure("No root view controller available"))
-            return
-        }
-        
-        let banner = UsercentricsBanner()
-        banner.showFirstLayer(hostView: viewController, layout: .popup(position: .center)) { [weak self] response in
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else {
                 completion(.failure("Self reference lost"))
                 return
             }
-            
-            let result: [String: Any] = [
-                "userInteraction": String(describing: response.userInteraction),
-                "controllerId": response.controllerId,
-                "consents": self.convertConsents(response.consents)
-            ]
-            
-            completion(.success(result))
+
+            guard let viewController = self.plugin?.getRootVC() else {
+                completion(.failure("No root view controller available"))
+                return
+            }
+
+            let banner = UsercentricsBanner()
+            banner.showFirstLayer(hostView: viewController) { [weak self] response in
+                guard let self = self else {
+                    completion(.failure("Self reference lost"))
+                    return
+                }
+
+                let result: [String: Any] = [
+                    "userInteraction": String(describing: response.userInteraction),
+                    "controllerId": response.controllerId,
+                    "consents": self.convertConsents(response.consents)
+                ]
+
+                completion(.success(result))
+            }
         }
     }
 
@@ -120,25 +128,32 @@ import UsercentricsUI
             return
         }
 
-        guard let viewController = UIApplication.shared.windows.first?.rootViewController else {
-            completion(.failure("No root view controller available"))
-            return
-        }
-
-        let banner = UsercentricsBanner()
-        banner.showSecondLayer(hostView: viewController) { [weak self] response in
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else {
                 completion(.failure("Self reference lost"))
                 return
             }
 
-            let result: [String: Any] = [
-                "userInteraction": String(describing: response.userInteraction),
-                "controllerId": response.controllerId,
-                "consents": self.convertConsents(response.consents)
-            ]
+            guard let viewController = self.plugin?.getRootVC() else {
+                completion(.failure("No root view controller available"))
+                return
+            }
 
-            completion(.success(result))
+            let banner = UsercentricsBanner()
+            banner.showSecondLayer(hostView: viewController) { [weak self] response in
+                guard let self = self else {
+                    completion(.failure("Self reference lost"))
+                    return
+                }
+
+                let result: [String: Any] = [
+                    "userInteraction": String(describing: response.userInteraction),
+                    "controllerId": response.controllerId,
+                    "consents": self.convertConsents(response.consents)
+                ]
+
+                completion(.success(result))
+            }
         }
     }
     
