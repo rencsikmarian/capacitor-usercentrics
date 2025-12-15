@@ -13,6 +13,7 @@ Pod::Spec.new do |s|
   s.source_files = 'ios/Sources/**/*.{swift,h,m,c,cc,mm,cpp}'
   s.ios.deployment_target = '14.0'
   s.dependency 'Capacitor'
+  s.dependency 'Usercentrics', '~> 2.24.2'
   s.dependency 'UsercentricsUI', '~> 2.24.2'
   s.swift_version = '5.1'
 end

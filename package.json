@@ -1,6 +1,6 @@
 {
   "name": "capacitor-usercentrics",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "usercentrics capacitor plugin",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
