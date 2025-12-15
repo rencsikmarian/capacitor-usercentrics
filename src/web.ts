@@ -1,9 +1,14 @@
 import { WebPlugin } from '@capacitor/core';
 
-import type { CapacitorUsercentricsPlugin, UsercentricsOptions, UsercentricsReadyStatus, UsercentricsBannerResult, UsercentricsConsent } from './definitions';
+import type {
+  CapacitorUsercentricsPlugin,
+  UsercentricsOptions,
+  UsercentricsReadyStatus,
+  UsercentricsBannerResult,
+  UsercentricsConsent,
+} from './definitions';
 
 export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUsercentricsPlugin {
-  
   private usercentrics: any = null;
   private isConfigured = false;
 
@@ -36,7 +41,7 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
         timeoutMillis: options.timeoutMillis,
         loggerLevel: options.loggerLevel,
         rulesetId: options.rulesetId,
-        consentMediation: options.consentMediation
+        consentMediation: options.consentMediation,
       };
 
       window.usercentrics.init(usercentricsOptions);
@@ -56,17 +61,20 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
         return;
       }
 
-      this.usercentrics.isReady((status: any) => {
-        const result: UsercentricsReadyStatus = {
-          shouldCollectConsent: status.shouldCollectConsent,
-          consents: this.convertConsents(status.consents),
-          usercentricsReady: status.usercentricsReady,
-          controllerId: status.controllerId
-        };
-        resolve(result);
-      }, (error: string) => {
-        reject(error);
-      });
+      this.usercentrics.isReady(
+        (status: any) => {
+          const result: UsercentricsReadyStatus = {
+            shouldCollectConsent: status.shouldCollectConsent,
+            consents: this.convertConsents(status.consents),
+            usercentricsReady: status.usercentricsReady,
+            controllerId: status.controllerId,
+          };
+          resolve(result);
+        },
+        (error: string) => {
+          reject(error);
+        },
+      );
     });
   }
 
@@ -77,16 +85,19 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
         return;
       }
 
-      this.usercentrics.showFirstLayer((response: any) => {
-        const result: UsercentricsBannerResult = {
-          consents: this.convertConsents(response.consents),
-          userInteraction: String(response.userInteraction),
-          controllerId: response.controllerId
-        };
-        resolve(result);
-      }, (error: string) => {
-        reject(error);
-      });
+      this.usercentrics.showFirstLayer(
+        (response: any) => {
+          const result: UsercentricsBannerResult = {
+            consents: this.convertConsents(response.consents),
+            userInteraction: String(response.userInteraction),
+            controllerId: response.controllerId,
+          };
+          resolve(result);
+        },
+        (error: string) => {
+          reject(error);
+        },
+      );
     });
   }
 
@@ -97,25 +108,20 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
         return;
       }
 
-      this.usercentrics.showSecondLayer((response: any) => {
-        const result: UsercentricsBannerResult = {
-          consents: this.convertConsents(response.consents),
-          userInteraction: String(response.userInteraction),
-          controllerId: response.controllerId
-        };
-        resolve(result);
-      }, (error: string) => {
-        reject(error);
-      });
+      this.usercentrics.showSecondLayer(
+        (response: any) => {
+          const result: UsercentricsBannerResult = {
+            consents: this.convertConsents(response.consents),
+            userInteraction: String(response.userInteraction),
+            controllerId: response.controllerId,
+          };
+          resolve(result);
+        },
+        (error: string) => {
+          reject(error);
+        },
+      );
     });
-  }
-
-  async reset(): Promise<void> {
-    if (!this.isConfigured || !this.usercentrics) {
-      throw new Error('Usercentrics not configured');
-    }
-
-    this.usercentrics.reset();
   }
 
   async getConsents(): Promise<UsercentricsConsent[]> {
@@ -186,7 +192,7 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
     if (!this.isConfigured || !this.usercentrics) {
       throw new Error('Usercentrics not configured');
     }
-    const decisions = Object.values(consents).map(c => ({ templateId: c.templateId, status: c.status }));
+    const decisions = Object.values(consents).map((c) => ({ templateId: c.templateId, status: c.status }));
     if (typeof this.usercentrics.saveDecisions === 'function') {
       this.usercentrics.saveDecisions(decisions, 'explicit');
     }
@@ -197,14 +203,14 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
       return [];
     }
 
-    return consents.map(consent => ({
+    return consents.map((consent) => ({
       templateId: consent.templateId,
       status: consent.isConsentGiven,
       type: consent.type?.toLowerCase() || 'explicit',
       timestamp: consent.timestamp,
       dataProcessor: consent.dataProcessor,
       version: consent.version,
-      isEssential: consent.isEssential
+      isEssential: consent.isEssential,
     }));
   }
 }

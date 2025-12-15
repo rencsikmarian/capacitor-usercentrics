@@ -2,15 +2,14 @@ package com.capacitor.usercentrics;
 
 import android.app.Activity;
 import android.content.Context;
-import com.getcapacitor.JSObject;
 import com.getcapacitor.JSArray;
+import com.getcapacitor.JSObject;
 import com.getcapacitor.Logger;
 import com.usercentrics.sdk.*;
 import com.usercentrics.sdk.errors.UsercentricsError;
 import com.usercentrics.sdk.models.common.UsercentricsLoggerLevel;
 import com.usercentrics.sdk.models.settings.UsercentricsConsentType;
 import com.usercentrics.sdk.services.tcf.interfaces.TCFData;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -74,7 +73,7 @@ public class CapacitorUsercentrics {
 
             // Use the simple constructor as shown in the documentation
             UsercentricsOptions usercentricsOptions = new UsercentricsOptions(settingsId);
-            
+
             // Apply additional options if provided
             if (options.has("defaultLanguage")) {
                 usercentricsOptions.setDefaultLanguage(options.getString("defaultLanguage"));
@@ -110,7 +109,7 @@ public class CapacitorUsercentrics {
             }
 
             Usercentrics.initialize(context, usercentricsOptions);
-            
+
             callback.onSuccess();
         } catch (Exception e) {
             Logger.error("Usercentrics configure error", e);
@@ -120,14 +119,13 @@ public class CapacitorUsercentrics {
 
     public void isReady(ReadyCallback callback) {
         try {
-
             Usercentrics.isReady(
                 (UsercentricsReadyStatus status) -> {
                     usercentricsSDK = Usercentrics.getInstance();
                     JSObject result = new JSObject();
                     result.put("shouldCollectConsent", status.getShouldCollectConsent());
                     result.put("controllerId", usercentricsSDK.getControllerId());
-                    
+
                     // Convert consents list to array of objects
                     JSArray consentsArr = new JSArray();
                     for (UsercentricsServiceConsent consent : status.getConsents()) {
@@ -140,7 +138,7 @@ public class CapacitorUsercentrics {
                         consentsArr.put(consentObj);
                     }
                     result.put("consents", consentsArr);
-                    
+
                     callback.onSuccess(result);
                     return null;
                 },
@@ -172,27 +170,27 @@ public class CapacitorUsercentrics {
             activity.runOnUiThread(() -> {
                 UsercentricsBanner banner = new UsercentricsBanner(activity, null);
                 banner.showFirstLayer((UsercentricsConsentUserResponse response) -> {
-                        JSObject result = new JSObject();
-                        
-                        String userInteraction = response.getUserInteraction().toString();
-                        result.put("userInteraction", userInteraction);
-                        result.put("controllerId", response.getControllerId());
-                        
-                        JSArray consentsArr = new JSArray();
-                        for (UsercentricsServiceConsent consent : response.getConsents()) {
-                            JSObject consentObj = new JSObject();
-                            consentObj.put("templateId", consent.getTemplateId());
-                            consentObj.put("status", consent.getStatus());
-                            consentObj.put("dataProcessor", consent.getDataProcessor());
-                            consentObj.put("version", consent.getVersion());
-                            consentObj.put("isEssential", consent.isEssential());
-                            consentsArr.put(consentObj);
-                        }
-                        result.put("consents", consentsArr);
-                        
-                        callback.onSuccess(result);
-                        return null;
-                    });
+                    JSObject result = new JSObject();
+
+                    String userInteraction = response.getUserInteraction().toString();
+                    result.put("userInteraction", userInteraction);
+                    result.put("controllerId", response.getControllerId());
+
+                    JSArray consentsArr = new JSArray();
+                    for (UsercentricsServiceConsent consent : response.getConsents()) {
+                        JSObject consentObj = new JSObject();
+                        consentObj.put("templateId", consent.getTemplateId());
+                        consentObj.put("status", consent.getStatus());
+                        consentObj.put("dataProcessor", consent.getDataProcessor());
+                        consentObj.put("version", consent.getVersion());
+                        consentObj.put("isEssential", consent.isEssential());
+                        consentsArr.put(consentObj);
+                    }
+                    result.put("consents", consentsArr);
+
+                    callback.onSuccess(result);
+                    return null;
+                });
             });
         } catch (Exception e) {
             Logger.error("Usercentrics showBanner error", e);
@@ -216,45 +214,30 @@ public class CapacitorUsercentrics {
             activity.runOnUiThread(() -> {
                 UsercentricsBanner banner = new UsercentricsBanner(activity, null);
                 banner.showSecondLayer((UsercentricsConsentUserResponse response) -> {
-                        JSObject result = new JSObject();
-                        
-                        String userInteraction = response.getUserInteraction().toString();
-                        result.put("userInteraction", userInteraction);
-                        result.put("controllerId", response.getControllerId());
-                        
-                        JSArray consentsArr = new JSArray();
-                        for (UsercentricsServiceConsent consent : response.getConsents()) {
-                            JSObject consentObj = new JSObject();
-                            consentObj.put("templateId", consent.getTemplateId());
-                            consentObj.put("status", consent.getStatus());
-                            consentObj.put("dataProcessor", consent.getDataProcessor());
-                            consentObj.put("version", consent.getVersion());
-                            consentObj.put("isEssential", consent.isEssential());
-                            consentsArr.put(consentObj);
-                        }
-                        result.put("consents", consentsArr);
-                        
-                        callback.onSuccess(result);
-                        return null;
-                    });
+                    JSObject result = new JSObject();
+
+                    String userInteraction = response.getUserInteraction().toString();
+                    result.put("userInteraction", userInteraction);
+                    result.put("controllerId", response.getControllerId());
+
+                    JSArray consentsArr = new JSArray();
+                    for (UsercentricsServiceConsent consent : response.getConsents()) {
+                        JSObject consentObj = new JSObject();
+                        consentObj.put("templateId", consent.getTemplateId());
+                        consentObj.put("status", consent.getStatus());
+                        consentObj.put("dataProcessor", consent.getDataProcessor());
+                        consentObj.put("version", consent.getVersion());
+                        consentObj.put("isEssential", consent.isEssential());
+                        consentsArr.put(consentObj);
+                    }
+                    result.put("consents", consentsArr);
+
+                    callback.onSuccess(result);
+                    return null;
+                });
             });
         } catch (Exception e) {
             Logger.error("Usercentrics showSecondLayer error", e);
-            callback.onError(e.getMessage());
-        }
-    }
-
-    public void reset(Callback callback) {
-        try {
-            if (usercentricsSDK == null) {
-                callback.onError("Usercentrics not configured");
-                return;
-            }
-
-            Usercentrics.reset();
-            callback.onSuccess();
-        } catch (Exception e) {
-            Logger.error("Usercentrics reset error", e);
             callback.onError(e.getMessage());
         }
     }
@@ -268,7 +251,7 @@ public class CapacitorUsercentrics {
 
             List<UsercentricsServiceConsent> consents = usercentricsSDK.getConsents();
             JSArray consentsArr = new JSArray();
-            
+
             for (UsercentricsServiceConsent consent : consents) {
                 JSObject consentObj = new JSObject();
                 consentObj.put("templateId", consent.getTemplateId());
@@ -278,7 +261,7 @@ public class CapacitorUsercentrics {
                 consentObj.put("isEssential", consent.isEssential());
                 consentsArr.put(consentObj);
             }
-            
+
             JSObject result = new JSObject();
             result.put("consents", consentsArr);
             callback.onSuccess(result);
@@ -298,7 +281,7 @@ public class CapacitorUsercentrics {
             Object cmpData = usercentricsSDK.getCMPData();
             JSObject result = new JSObject();
             result.put("cmpData", cmpData);
-            
+
             callback.onSuccess(result);
         } catch (Exception e) {
             Logger.error("Usercentrics getCMPData error", e);
@@ -313,7 +296,8 @@ public class CapacitorUsercentrics {
                 return;
             }
 
-            usercentricsSDK.restoreUserSession(usercentricsSDK.getControllerId(),
+            usercentricsSDK.restoreUserSession(
+                usercentricsSDK.getControllerId(),
                 (UsercentricsReadyStatus status) -> {
                     callback.onSuccess();
                     return null;
@@ -353,7 +337,7 @@ public class CapacitorUsercentrics {
 
             // Convert JSObject consents back to List<UsercentricsServiceConsent>
             List<UsercentricsServiceConsent> consents = new ArrayList<>();
-            
+
             // Iterate through the consents object
             for (Iterator<String> it = consentsData.keys(); it.hasNext(); ) {
                 String key = it.next();
@@ -363,24 +347,25 @@ public class CapacitorUsercentrics {
                     boolean status = consentData.getBool("status");
                     String dataProcessor = consentData.getString("dataProcessor");
                     String version = consentData.getString("version");
-                    
+
                     // Create a UsercentricsServiceConsent object
                     UsercentricsServiceConsent consent = new UsercentricsServiceConsent(
-                        templateId, 
-                        status, 
-                        new ArrayList<>(), // history - empty list
+                        templateId,
+                        status,
+                        new ArrayList(), // history - empty list
                         null, // type - null for now
-                        dataProcessor, 
-                        version, 
-                        false // isEssential - default to false
+                        dataProcessor,
+                        version,
+                        false, // isEssential - default to false
+                        "" // additional string required by current SDK
                     );
                     consents.add(consent);
                 }
             }
-            
+
             // Apply consent to each service
             applyConsentToSDKs(consents);
-            
+
             callback.onSuccess();
         } catch (Exception e) {
             Logger.error("Usercentrics applyConsent error", e);
@@ -390,11 +375,11 @@ public class CapacitorUsercentrics {
 
     private void applyConsentToSDKs(List<UsercentricsServiceConsent> consents) {
         if (consents == null) return;
-        
+
         for (UsercentricsServiceConsent service : consents) {
             String templateId = service.getTemplateId();
             boolean status = service.getStatus();
-            
+
             // Apply consent based on template ID
             switch (templateId) {
                 case "diWdt4yLB": // Google Analytics for Firebase Template ID
@@ -419,13 +404,12 @@ public class CapacitorUsercentrics {
             // Example implementation for Firebase Analytics Consent Mode
             // Note: This is a placeholder - you'll need to implement actual Firebase integration
             Logger.info("Applying Firebase consent: " + consent);
-            
+
             // Example Firebase consent application:
             // Firebase.analytics.setConsent {
             //     analyticsStorage(if (consent) ConsentStatus.GRANTED else ConsentStatus.DENIED)
             //     adStorage(if (consent) ConsentStatus.GRANTED else ConsentStatus.DENIED)
             // }
-            
         } catch (Exception e) {
             Logger.error("Error applying Firebase consent", e);
         }
@@ -435,12 +419,11 @@ public class CapacitorUsercentrics {
         try {
             // Example implementation for Unity Ads
             Logger.info("Applying Unity Ads consent: " + consent);
-            
+
             // Example Unity Ads consent application:
             // if (consent) {
             //     UnityAds.initialize(this, "your-game-id", this, true);
             // }
-            
         } catch (Exception e) {
             Logger.error("Error applying Unity Ads consent", e);
         }
@@ -450,12 +433,11 @@ public class CapacitorUsercentrics {
         try {
             // Example implementation for AppLovin
             Logger.info("Applying AppLovin consent: " + consent);
-            
+
             // Example AppLovin consent application:
             // if (consent) {
             //     AppLovinSdk.getInstance().setPrivacySettings(privacySettings);
             // }
-            
         } catch (Exception e) {
             Logger.error("Error applying AppLovin consent", e);
         }
@@ -469,19 +451,19 @@ public class CapacitorUsercentrics {
             }
 
             usercentricsSDK.getTCFData((TCFData tcfData) -> {
-                    JSObject result = new JSObject();
-                    result.put("tcString", tcfData.getTcString());
-                    result.put("features", tcfData.getFeatures());
-                    result.put("purposes", tcfData.getPurposes());
-                    result.put("specialFeatures", tcfData.getSpecialFeatures());
-                    result.put("specialPurposes", tcfData.getSpecialPurposes());
-                    result.put("stacks", tcfData.getStacks());
-                    result.put("thirdPartyCount", tcfData.getThirdPartyCount());
-                    result.put("vendors", tcfData.getVendors());
-                    
-                    callback.onSuccess(result);
-                    return null;
-                });
+                JSObject result = new JSObject();
+                result.put("tcString", tcfData.getTcString());
+                result.put("features", tcfData.getFeatures());
+                result.put("purposes", tcfData.getPurposes());
+                result.put("specialFeatures", tcfData.getSpecialFeatures());
+                result.put("specialPurposes", tcfData.getSpecialPurposes());
+                result.put("stacks", tcfData.getStacks());
+                result.put("thirdPartyCount", tcfData.getThirdPartyCount());
+                result.put("vendors", tcfData.getVendors());
+
+                callback.onSuccess(result);
+                return null;
+            });
         } catch (Exception e) {
             Logger.error("Usercentrics getTCFData error", e);
             callback.onError(e.getMessage());
@@ -497,7 +479,7 @@ public class CapacitorUsercentrics {
 
             List<UsercentricsServiceConsent> consents = usercentricsSDK.acceptAll(UsercentricsConsentType.EXPLICIT);
             applyConsentToSDKs(consents);
-            
+
             callback.onSuccess();
         } catch (Exception e) {
             Logger.error("Usercentrics acceptAll error", e);
@@ -514,7 +496,7 @@ public class CapacitorUsercentrics {
 
             List<UsercentricsServiceConsent> consents = usercentricsSDK.denyAll(UsercentricsConsentType.EXPLICIT);
             applyConsentToSDKs(consents);
-            
+
             callback.onSuccess();
         } catch (Exception e) {
             Logger.error("Usercentrics denyAll error", e);
@@ -532,7 +514,7 @@ public class CapacitorUsercentrics {
             // Convert JSObject consents back to List<UserDecision>
             List<UserDecision> decisions = new ArrayList<>();
             List<UsercentricsServiceConsent> consents = new ArrayList<>();
-            
+
             // Iterate through the consents object
             for (Iterator<String> it = consentsData.keys(); it.hasNext(); ) {
                 String key = it.next();
@@ -542,29 +524,30 @@ public class CapacitorUsercentrics {
                     boolean status = consentData.getBool("status");
                     String dataProcessor = consentData.getString("dataProcessor");
                     String version = consentData.getString("version");
-                    
+
                     // Create a UsercentricsServiceConsent object for applyConsentToSDKs
                     UsercentricsServiceConsent consent = new UsercentricsServiceConsent(
-                        templateId, 
-                        status, 
-                        new ArrayList<>(), // history - empty list
+                        templateId,
+                        status,
+                        new ArrayList(), // history - empty list
                         null, // type - null for now
-                        dataProcessor, 
-                        version, 
-                        false // isEssential - default to false
+                        dataProcessor,
+                        version,
+                        false, // isEssential - default to false
+                        "" // additional string required by current SDK
                     );
                     consents.add(consent);
-                    
+
                     // Create a UserDecision object for saveDecisions
                     UserDecision decision = new UserDecision(templateId, status);
                     decisions.add(decision);
                 }
             }
-            
+
             // Save consent and apply to SDKs
             usercentricsSDK.saveDecisions(decisions, UsercentricsConsentType.EXPLICIT);
             applyConsentToSDKs(consents);
-            
+
             callback.onSuccess();
         } catch (Exception e) {
             Logger.error("Usercentrics saveConsent error", e);

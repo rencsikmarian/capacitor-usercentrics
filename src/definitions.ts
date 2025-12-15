@@ -36,7 +36,6 @@ export interface CapacitorUsercentricsPlugin {
   isReady(): Promise<UsercentricsReadyStatus>;
   showBanner(): Promise<UsercentricsBannerResult>;
   showSecondLayer(): Promise<UsercentricsBannerResult>;
-  reset(): Promise<void>;
   getConsents(): Promise<UsercentricsConsent[]>;
   getCMPData(): Promise<any>;
   getTCFData(): Promise<any>;

@@ -17,7 +17,6 @@ npx cap sync
 * [`isReady()`](#isready)
 * [`showBanner()`](#showbanner)
 * [`showSecondLayer()`](#showsecondlayer)
-* [`reset()`](#reset)
 * [`getConsents()`](#getconsents)
 * [`getCMPData()`](#getcmpdata)
 * [`getTCFData()`](#gettcfdata)
@@ -77,15 +76,6 @@ showSecondLayer() => Promise<UsercentricsBannerResult>
 ```
 
 **Returns:** <code>Promise&lt;<a href="#usercentricsbannerresult">UsercentricsBannerResult</a>&gt;</code>
-
---------------------
-
-
-### reset()
-
-```typescript
-reset() => Promise<void>
-```
 
 --------------------
 

@@ -3,16 +3,16 @@ import Usercentrics
 import UsercentricsUI
 
 @objc public class CapacitorUsercentrics: NSObject {
-    
+
     weak var plugin: CapacitorUsercentricsPlugin?
 
     private var usercentrics: UsercentricsSDK?
-    
+
     public enum Result<T> {
         case success(T)
         case failure(String)
     }
-    
+
     public typealias Callback = (Result<Void>) -> Void
     public typealias ReadyCallback = (Result<[String: Any]>) -> Void
     public typealias BannerCallback = (Result<[String: Any]>) -> Void
@@ -20,15 +20,15 @@ import UsercentricsUI
     public typealias CMPDataCallback = (Result<[String: Any]>) -> Void
     public typealias TCFDataCallback = (Result<[String: Any]>) -> Void
     public typealias SessionCallback = (Result<String>) -> Void
-    
+
     public func configure(options: [String: Any], completion: @escaping Callback) {
         guard let settingsId = options["settingsId"] as? String else {
             completion(.failure("settingsId is required"))
             return
         }
-        
+
         let usercentricsOptions = UsercentricsOptions(settingsId: settingsId)
-        
+
         if let defaultLanguage = options["defaultLanguage"] as? String {
             usercentricsOptions.defaultLanguage = defaultLanguage
         }
@@ -58,41 +58,41 @@ import UsercentricsUI
         if let consentMediation = options["consentMediation"] as? Bool {
             usercentricsOptions.consentMediation = consentMediation
         }
-        
+
         UsercentricsCore.configure(options: usercentricsOptions)
-        
+
         completion(.success(()))
     }
-    
+
     public func isReady(completion: @escaping ReadyCallback) {
-        
+
         UsercentricsCore.isReady(onSuccess: { [weak self] status in
             guard let self = self else {
                 completion(.failure("Self reference lost"))
                 return
             }
-            
+
             let result: [String: Any] = [
                 "shouldCollectConsent": status.shouldCollectConsent,
                 "usercentricsReady": true,
                 "controllerId": UsercentricsCore.shared.getControllerId(),
                 "consents": self.convertConsents(status.consents)
             ]
-            
+
             self.usercentrics = UsercentricsCore.shared
-            
+
             completion(.success(result))
         }, onFailure: { error in
             completion(.failure(error.localizedDescription))
         })
     }
-    
+
     public func showBanner(completion: @escaping BannerCallback) {
         guard self.usercentrics != nil else {
             completion(.failure("Usercentrics not configured"))
             return
         }
-        
+
         DispatchQueue.main.async { [weak self] in
             guard let self = self else {
                 completion(.failure("Self reference lost"))
@@ -156,36 +156,26 @@ import UsercentricsUI
             }
         }
     }
-    
-    public func reset(completion: @escaping Callback) {
-        guard let usercentrics = self.usercentrics else {
-            completion(.failure("Usercentrics not configured"))
-            return
-        }
-        
-        UsercentricsCore.reset()
-        completion(.success(()))
-    }
-    
+
     public func getConsents(completion: @escaping ConsentsCallback) {
         guard let usercentrics = self.usercentrics else {
             completion(.failure("Usercentrics not configured"))
             return
         }
-        
+
         let consents = usercentrics.getConsents()
         let result = convertConsents(consents)
         completion(.success(result))
     }
-    
+
     public func getCMPData(completion: @escaping CMPDataCallback) {
         guard let usercentrics = self.usercentrics else {
             completion(.failure("Usercentrics not configured"))
             return
         }
-        
+
         let cmpData = usercentrics.getCMPData()
-        completion(.success(["cmpData":cmpData]))
+        completion(.success(["cmpData": cmpData]))
     }
 
     public func getTCFData(completion: @escaping TCFDataCallback) {
@@ -208,7 +198,7 @@ import UsercentricsUI
             completion(.success(result))
         }
     }
-    
+
     public func restoreUserSession(userSession: String, completion: @escaping Callback) {
         guard let usercentrics = self.usercentrics else {
             completion(.failure("Usercentrics not configured"))
@@ -221,7 +211,7 @@ import UsercentricsUI
             completion(.failure(error.localizedDescription))
         })
     }
-    
+
     public func saveUserSession(completion: @escaping SessionCallback) {
         guard let usercentrics = self.usercentrics else {
             completion(.failure("Usercentrics not configured"))
@@ -275,7 +265,7 @@ import UsercentricsUI
         _ = usercentrics.saveDecisions(decisions: decisions, consentType: .explicit_)
         completion(.success(()))
     }
-    
+
     // Helper method to convert consents to dictionary format
     private func convertConsents(_ consents: [UsercentricsServiceConsent]) -> [[String: Any]] {
         return consents.map { consent in

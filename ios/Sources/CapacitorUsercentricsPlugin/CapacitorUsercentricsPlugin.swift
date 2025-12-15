@@ -15,7 +15,6 @@ public class CapacitorUsercentricsPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "isReady", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "showBanner", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "showSecondLayer", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "reset", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getConsents", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getCMPData", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getTCFData", returnType: CAPPluginReturnPromise),
@@ -51,7 +50,7 @@ public class CapacitorUsercentricsPlugin: CAPPlugin, CAPBridgedPlugin {
             call.reject("Options parameter is required")
             return
         }
-        
+
         implementation.configure(options: options) { result in
             switch result {
             case .success:
@@ -89,17 +88,6 @@ public class CapacitorUsercentricsPlugin: CAPPlugin, CAPBridgedPlugin {
             switch result {
             case .success(let bannerResult):
                 call.resolve(bannerResult)
-            case .failure(let error):
-                call.reject(error)
-            }
-        }
-    }
-
-    @objc func reset(_ call: CAPPluginCall) {
-        implementation.reset { result in
-            switch result {
-            case .success:
-                call.resolve()
             case .failure(let error):
                 call.reject(error)
             }
@@ -196,7 +184,7 @@ public class CapacitorUsercentricsPlugin: CAPPlugin, CAPBridgedPlugin {
             call.reject("userSession parameter is required")
             return
         }
-        
+
         implementation.restoreUserSession(userSession: userSession) { result in
             switch result {
             case .success:

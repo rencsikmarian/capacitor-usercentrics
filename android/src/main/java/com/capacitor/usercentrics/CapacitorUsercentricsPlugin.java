@@ -23,185 +23,194 @@ public class CapacitorUsercentricsPlugin extends Plugin {
         if (options == null) {
             options = call.getData();
         }
-        implementation.configure(options, new CapacitorUsercentrics.Callback() {
-            @Override
-            public void onSuccess() {
-                call.resolve();
-            }
+        implementation.configure(
+            options,
+            new CapacitorUsercentrics.Callback() {
+                @Override
+                public void onSuccess() {
+                    call.resolve();
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
+        );
     }
 
     @PluginMethod
     public void isReady(PluginCall call) {
-        implementation.isReady(new CapacitorUsercentrics.ReadyCallback() {
-            @Override
-            public void onSuccess(JSObject status) {
-                call.resolve(status);
-            }
+        implementation.isReady(
+            new CapacitorUsercentrics.ReadyCallback() {
+                @Override
+                public void onSuccess(JSObject status) {
+                    call.resolve(status);
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
+        );
     }
 
     @PluginMethod
     public void showBanner(PluginCall call) {
-        implementation.showBanner(new CapacitorUsercentrics.BannerCallback() {
-            @Override
-            public void onSuccess(JSObject result) {
-                call.resolve(result);
-            }
+        implementation.showBanner(
+            new CapacitorUsercentrics.BannerCallback() {
+                @Override
+                public void onSuccess(JSObject result) {
+                    call.resolve(result);
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
+        );
     }
 
     @PluginMethod
     public void showSecondLayer(PluginCall call) {
-        implementation.showSecondLayer(new CapacitorUsercentrics.BannerCallback() {
-            @Override
-            public void onSuccess(JSObject result) {
-                call.resolve(result);
-            }
+        implementation.showSecondLayer(
+            new CapacitorUsercentrics.BannerCallback() {
+                @Override
+                public void onSuccess(JSObject result) {
+                    call.resolve(result);
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
-    }
-
-    @PluginMethod
-    public void reset(PluginCall call) {
-        implementation.reset(new CapacitorUsercentrics.Callback() {
-            @Override
-            public void onSuccess() {
-                call.resolve();
-            }
-
-            @Override
-            public void onError(String error) {
-                call.reject(error);
-            }
-        });
+        );
     }
 
     @PluginMethod
     public void getConsents(PluginCall call) {
-        implementation.getConsents(new CapacitorUsercentrics.ConsentsCallback() {
-            @Override
-            public void onSuccess(JSObject consents) {
-                call.resolve(consents);
-            }
+        implementation.getConsents(
+            new CapacitorUsercentrics.ConsentsCallback() {
+                @Override
+                public void onSuccess(JSObject consents) {
+                    call.resolve(consents);
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
+        );
     }
 
     @PluginMethod
     public void getCMPData(PluginCall call) {
-        implementation.getCMPData(new CapacitorUsercentrics.CMPDataCallback() {
-            @Override
-            public void onSuccess(JSObject data) {
-                call.resolve(data);
-            }
+        implementation.getCMPData(
+            new CapacitorUsercentrics.CMPDataCallback() {
+                @Override
+                public void onSuccess(JSObject data) {
+                    call.resolve(data);
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
+        );
     }
 
     @PluginMethod
     public void getTCFData(PluginCall call) {
-        implementation.getTCFData(new CapacitorUsercentrics.CMPDataCallback() {
-            @Override
-            public void onSuccess(JSObject data) {
-                call.resolve(data);
-            }
+        implementation.getTCFData(
+            new CapacitorUsercentrics.CMPDataCallback() {
+                @Override
+                public void onSuccess(JSObject data) {
+                    call.resolve(data);
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
+        );
     }
 
     @PluginMethod
     public void restoreUserSession(PluginCall call) {
         String userSession = call.getString("userSession");
-        implementation.restoreUserSession(userSession, new CapacitorUsercentrics.Callback() {
-            @Override
-            public void onSuccess() {
-                call.resolve();
-            }
+        implementation.restoreUserSession(
+            userSession,
+            new CapacitorUsercentrics.Callback() {
+                @Override
+                public void onSuccess() {
+                    call.resolve();
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
+        );
     }
 
     @PluginMethod
     public void saveUserSession(PluginCall call) {
-        implementation.saveUserSession(new CapacitorUsercentrics.SessionCallback() {
-            @Override
-            public void onSuccess(String session) {
-                JSObject result = new JSObject();
-                result.put("session", session);
-                call.resolve(result);
-            }
+        implementation.saveUserSession(
+            new CapacitorUsercentrics.SessionCallback() {
+                @Override
+                public void onSuccess(String session) {
+                    JSObject result = new JSObject();
+                    result.put("session", session);
+                    call.resolve(result);
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
+        );
     }
 
     @PluginMethod
     public void acceptAll(PluginCall call) {
-        implementation.acceptAll(new CapacitorUsercentrics.Callback() {
-            @Override
-            public void onSuccess() {
-                call.resolve();
-            }
+        implementation.acceptAll(
+            new CapacitorUsercentrics.Callback() {
+                @Override
+                public void onSuccess() {
+                    call.resolve();
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
+        );
     }
 
     @PluginMethod
     public void denyAll(PluginCall call) {
-        implementation.denyAll(new CapacitorUsercentrics.Callback() {
-            @Override
-            public void onSuccess() {
-                call.resolve();
-            }
+        implementation.denyAll(
+            new CapacitorUsercentrics.Callback() {
+                @Override
+                public void onSuccess() {
+                    call.resolve();
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
+        );
     }
 
     @PluginMethod
@@ -210,17 +219,20 @@ public class CapacitorUsercentricsPlugin extends Plugin {
         if (consents == null) {
             consents = call.getData();
         }
-        implementation.applyConsent(consents, new CapacitorUsercentrics.Callback() {
-            @Override
-            public void onSuccess() {
-                call.resolve();
-            }
+        implementation.applyConsent(
+            consents,
+            new CapacitorUsercentrics.Callback() {
+                @Override
+                public void onSuccess() {
+                    call.resolve();
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
+        );
     }
 
     @PluginMethod
@@ -229,16 +241,19 @@ public class CapacitorUsercentricsPlugin extends Plugin {
         if (consents == null) {
             consents = call.getData();
         }
-        implementation.saveConsent(consents, new CapacitorUsercentrics.Callback() {
-            @Override
-            public void onSuccess() {
-                call.resolve();
-            }
+        implementation.saveConsent(
+            consents,
+            new CapacitorUsercentrics.Callback() {
+                @Override
+                public void onSuccess() {
+                    call.resolve();
+                }
 
-            @Override
-            public void onError(String error) {
-                call.reject(error);
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
             }
-        });
+        );
     }
 }
