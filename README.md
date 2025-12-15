@@ -16,12 +16,19 @@ npx cap sync
 * [`configure(...)`](#configure)
 * [`isReady()`](#isready)
 * [`showBanner()`](#showbanner)
+* [`showSecondLayer()`](#showsecondlayer)
 * [`reset()`](#reset)
 * [`getConsents()`](#getconsents)
 * [`getCMPData()`](#getcmpdata)
+* [`getTCFData()`](#gettcfdata)
+* [`acceptAll()`](#acceptall)
+* [`denyAll()`](#denyall)
+* [`applyConsent(...)`](#applyconsent)
+* [`saveConsent(...)`](#saveconsent)
 * [`restoreUserSession(...)`](#restoreusersession)
 * [`saveUserSession()`](#saveusersession)
 * [Interfaces](#interfaces)
+* [Type Aliases](#type-aliases)
 
 </docgen-index>
 
@@ -63,6 +70,17 @@ showBanner() => Promise<UsercentricsBannerResult>
 --------------------
 
 
+### showSecondLayer()
+
+```typescript
+showSecondLayer() => Promise<UsercentricsBannerResult>
+```
+
+**Returns:** <code>Promise&lt;<a href="#usercentricsbannerresult">UsercentricsBannerResult</a>&gt;</code>
+
+--------------------
+
+
 ### reset()
 
 ```typescript
@@ -94,6 +112,61 @@ getCMPData() => Promise<any>
 --------------------
 
 
+### getTCFData()
+
+```typescript
+getTCFData() => Promise<any>
+```
+
+**Returns:** <code>Promise&lt;any&gt;</code>
+
+--------------------
+
+
+### acceptAll()
+
+```typescript
+acceptAll() => Promise<void>
+```
+
+--------------------
+
+
+### denyAll()
+
+```typescript
+denyAll() => Promise<void>
+```
+
+--------------------
+
+
+### applyConsent(...)
+
+```typescript
+applyConsent(consents: Record<string, UsercentricsConsent>) => Promise<void>
+```
+
+| Param          | Type                                                                                                            |
+| -------------- | --------------------------------------------------------------------------------------------------------------- |
+| **`consents`** | <code><a href="#record">Record</a>&lt;string, <a href="#usercentricsconsent">UsercentricsConsent</a>&gt;</code> |
+
+--------------------
+
+
+### saveConsent(...)
+
+```typescript
+saveConsent(consents: Record<string, UsercentricsConsent>) => Promise<void>
+```
+
+| Param          | Type                                                                                                            |
+| -------------- | --------------------------------------------------------------------------------------------------------------- |
+| **`consents`** | <code><a href="#record">Record</a>&lt;string, <a href="#usercentricsconsent">UsercentricsConsent</a>&gt;</code> |
+
+--------------------
+
+
 ### restoreUserSession(...)
 
 ```typescript
@@ -110,10 +183,10 @@ restoreUserSession(userSession: string) => Promise<void>
 ### saveUserSession()
 
 ```typescript
-saveUserSession() => Promise<string>
+saveUserSession() => Promise<{ session: string; }>
 ```
 
-**Returns:** <code>Promise&lt;string&gt;</code>
+**Returns:** <code>Promise&lt;{ session: string; }&gt;</code>
 
 --------------------
 
@@ -146,15 +219,15 @@ saveUserSession() => Promise<string>
 
 #### UsercentricsConsent
 
-| Prop                | Type                                  |
-| ------------------- | ------------------------------------- |
-| **`templateId`**    | <code>string</code>                   |
-| **`status`**        | <code>boolean</code>                  |
-| **`type`**          | <code>'explicit' \| 'implicit'</code> |
-| **`timestamp`**     | <code>number</code>                   |
-| **`dataProcessor`** | <code>string</code>                   |
-| **`version`**       | <code>string</code>                   |
-| **`isEssential`**   | <code>boolean</code>                  |
+| Prop                | Type                 |
+| ------------------- | -------------------- |
+| **`templateId`**    | <code>string</code>  |
+| **`status`**        | <code>boolean</code> |
+| **`type`**          | <code>string</code>  |
+| **`timestamp`**     | <code>number</code>  |
+| **`dataProcessor`** | <code>string</code>  |
+| **`version`**       | <code>string</code>  |
+| **`isEssential`**   | <code>boolean</code> |
 
 
 #### UsercentricsBannerResult
@@ -162,6 +235,17 @@ saveUserSession() => Promise<string>
 | Prop                  | Type                               |
 | --------------------- | ---------------------------------- |
 | **`consents`**        | <code>UsercentricsConsent[]</code> |
-| **`userInteraction`** | <code>boolean</code>               |
+| **`userInteraction`** | <code>string</code>                |
+| **`controllerId`**    | <code>string</code>                |
+
+
+### Type Aliases
+
+
+#### Record
+
+Construct a type with a set of properties K of type T
+
+<code>{ [P in K]: T; }</code>
 
 </docgen-api>
