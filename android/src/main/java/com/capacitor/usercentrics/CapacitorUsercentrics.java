@@ -5,6 +5,7 @@ import android.content.Context;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Logger;
+import com.usercentrics.ccpa.CCPAData;
 import com.usercentrics.sdk.*;
 import com.usercentrics.sdk.errors.UsercentricsError;
 import com.usercentrics.sdk.models.common.UsercentricsLoggerLevel;
@@ -55,6 +56,16 @@ public class CapacitorUsercentrics {
 
     public interface SessionCallback {
         void onSuccess(String session);
+        void onError(String error);
+    }
+
+    public interface ControllerIdCallback {
+        void onSuccess(String controllerId);
+        void onError(String error);
+    }
+
+    public interface VariantCallback {
+        void onSuccess(String variant);
         void onError(String error);
     }
 
@@ -289,7 +300,7 @@ public class CapacitorUsercentrics {
         }
     }
 
-    public void restoreUserSession(String userSession, Callback callback) {
+    public void restoreUserSession(String controllerId, ReadyCallback callback) {
         try {
             if (usercentricsSDK == null) {
                 callback.onError("Usercentrics not configured");
@@ -297,9 +308,25 @@ public class CapacitorUsercentrics {
             }
 
             usercentricsSDK.restoreUserSession(
-                usercentricsSDK.getControllerId(),
+                controllerId,
                 (UsercentricsReadyStatus status) -> {
-                    callback.onSuccess();
+                    JSObject result = new JSObject();
+                    result.put("shouldCollectConsent", status.getShouldCollectConsent());
+                    result.put("controllerId", usercentricsSDK.getControllerId());
+
+                    JSArray consentsArr = new JSArray();
+                    for (UsercentricsServiceConsent consent : status.getConsents()) {
+                        JSObject consentObj = new JSObject();
+                        consentObj.put("templateId", consent.getTemplateId());
+                        consentObj.put("status", consent.getStatus());
+                        consentObj.put("dataProcessor", consent.getDataProcessor());
+                        consentObj.put("version", consent.getVersion());
+                        consentObj.put("isEssential", consent.isEssential());
+                        consentsArr.put(consentObj);
+                    }
+                    result.put("consents", consentsArr);
+
+                    callback.onSuccess(result);
                     return null;
                 },
                 (UsercentricsError error) -> {
@@ -552,6 +579,161 @@ public class CapacitorUsercentrics {
         } catch (Exception e) {
             Logger.error("Usercentrics saveConsent error", e);
             callback.onError(e.getMessage());
+        }
+    }
+
+    public void getControllerId(ControllerIdCallback callback) {
+        try {
+            if (usercentricsSDK == null) {
+                callback.onError("Usercentrics not configured");
+                return;
+            }
+            callback.onSuccess(usercentricsSDK.getControllerId());
+        } catch (Exception e) {
+            Logger.error("Usercentrics getControllerId error", e);
+            callback.onError(e.getMessage());
+        }
+    }
+
+    public void clearUserSession(ReadyCallback callback) {
+        try {
+            Usercentrics.getInstance().clearUserSession(
+                    (UsercentricsReadyStatus status) -> {
+                        usercentricsSDK = Usercentrics.getInstance();
+                        JSObject result = new JSObject();
+                        result.put("shouldCollectConsent", status.getShouldCollectConsent());
+                        result.put("controllerId", usercentricsSDK.getControllerId());
+
+                        JSArray consentsArr = new JSArray();
+                        for (UsercentricsServiceConsent consent : status.getConsents()) {
+                            JSObject consentObj = new JSObject();
+                            consentObj.put("templateId", consent.getTemplateId());
+                            consentObj.put("status", consent.getStatus());
+                            consentObj.put("dataProcessor", consent.getDataProcessor());
+                            consentObj.put("version", consent.getVersion());
+                            consentObj.put("isEssential", consent.isEssential());
+                            consentsArr.put(consentObj);
+                        }
+                        result.put("consents", consentsArr);
+
+                        callback.onSuccess(result);
+                        return null;
+                    },
+                    (UsercentricsError error) -> {
+                        callback.onError(error.getMessage());
+                        return null;
+                    }
+                );
+        } catch (Exception e) {
+            Logger.error("Usercentrics clearUserSession error", e);
+            callback.onError(e.getMessage());
+        }
+    }
+
+    public void changeLanguage(String language, Callback callback) {
+        try {
+            if (usercentricsSDK == null) {
+                callback.onError("Usercentrics not configured");
+                return;
+            }
+
+            usercentricsSDK.changeLanguage(
+                language,
+                () -> {
+                    callback.onSuccess();
+                    return null;
+                },
+                (UsercentricsError error) -> {
+                    callback.onError(error.getMessage());
+                    return null;
+                }
+            );
+        } catch (Exception e) {
+            Logger.error("Usercentrics changeLanguage error", e);
+            callback.onError(e.getMessage());
+        }
+    }
+
+    public void setCMPId(int id) {
+        Usercentrics.getInstance().setCMPId(id);
+    }
+
+    public void setABTestingVariant(String variant) {
+        Usercentrics.getInstance().setABTestingVariant(variant);
+    }
+
+    public void getABTestingVariant(VariantCallback callback) {
+        try {
+            if (usercentricsSDK == null) {
+                callback.onError("Usercentrics not configured");
+                return;
+            }
+            callback.onSuccess(usercentricsSDK.getABTestingVariant());
+        } catch (Exception e) {
+            Logger.error("Usercentrics getABTestingVariant error", e);
+            callback.onError(e.getMessage());
+        }
+    }
+
+    public void getCCPAData(CMPDataCallback callback) {
+        try {
+            if (usercentricsSDK == null) {
+                callback.onError("Usercentrics not configured");
+                return;
+            }
+
+            CCPAData uspData = usercentricsSDK.getUSPData();
+            JSObject result = new JSObject();
+            result.put("version", uspData.getVersion());
+            result.put("uspString", uspData.getUspString());
+            result.put("optedOut", uspData.getOptedOut());
+            result.put("lspact", uspData.getLspact());
+            result.put("noticeGiven", uspData.getNoticeGiven());
+
+            callback.onSuccess(result);
+        } catch (Exception e) {
+            Logger.error("Usercentrics getCCPAData error", e);
+            callback.onError(e.getMessage());
+        }
+    }
+
+    public void getAdditionalConsentModeData(CMPDataCallback callback) {
+        try {
+            if (usercentricsSDK == null) {
+                callback.onError("Usercentrics not configured");
+                return;
+            }
+
+            AdditionalConsentModeData acmData = usercentricsSDK.getAdditionalConsentModeData();
+            JSObject result = new JSObject();
+            result.put("acString", acmData.getAcString());
+
+            JSArray providersArr = new JSArray();
+            for (AdTechProvider provider : acmData.getAdTechProviders()) {
+                JSObject providerObj = new JSObject();
+                providerObj.put("id", provider.getId());
+                providerObj.put("name", provider.getName());
+                providerObj.put("privacyPolicyUrl", provider.getPrivacyPolicyUrl());
+                providerObj.put("consent", provider.getConsent());
+                providersArr.put(providerObj);
+            }
+            result.put("adTechProviders", providersArr);
+
+            callback.onSuccess(result);
+        } catch (Exception e) {
+            Logger.error("Usercentrics getAdditionalConsentModeData error", e);
+            callback.onError(e.getMessage());
+        }
+    }
+
+    public void track(int event) {
+        try {
+            UsercentricsAnalyticsEventType[] eventTypes = UsercentricsAnalyticsEventType.values();
+            if (event >= 0 && event < eventTypes.length) {
+                Usercentrics.getInstance().track(eventTypes[event]);
+            }
+        } catch (Exception e) {
+            Logger.error("Usercentrics track error", e);
         }
     }
 }

@@ -8,6 +8,41 @@ export interface UsercentricsOptions {
   consentMediation?: boolean;
 }
 
+export interface CCPAData {
+  version: number;
+  uspString: string;
+  optedOut?: boolean;
+  lspact?: boolean;
+  noticeGiven?: boolean;
+}
+
+export interface AdTechProvider {
+  id: number;
+  name: string;
+  privacyPolicyUrl: string;
+  consent: boolean;
+}
+
+export interface AdditionalConsentModeData {
+  acString: string;
+  adTechProviders: AdTechProvider[];
+}
+
+export enum UsercentricsAnalyticsEventType {
+  CMP_SHOWN = 0,
+  ACCEPT_ALL_FIRST_LAYER = 1,
+  DENY_ALL_FIRST_LAYER = 2,
+  SAVE_FIRST_LAYER = 3,
+  ACCEPT_ALL_SECOND_LAYER = 4,
+  DENY_ALL_SECOND_LAYER = 5,
+  SAVE_SECOND_LAYER = 6,
+  IMPRINT_LINK = 7,
+  MORE_INFORMATION_LINK = 8,
+  PRIVACY_POLICY_LINK = 9,
+  CCPA_TOGGLES_ON = 10,
+  CCPA_TOGGLES_OFF = 11,
+}
+
 export interface UsercentricsConsent {
   templateId: string;
   status: boolean;
@@ -43,6 +78,15 @@ export interface CapacitorUsercentricsPlugin {
   denyAll(): Promise<void>;
   applyConsent(consents: Record<string, UsercentricsConsent>): Promise<void>;
   saveConsent(consents: Record<string, UsercentricsConsent>): Promise<void>;
-  restoreUserSession(userSession: string): Promise<void>;
+  restoreUserSession(options: { controllerId: string }): Promise<UsercentricsReadyStatus>;
   saveUserSession(): Promise<{ session: string }>;
+  getControllerId(): Promise<{ controllerId: string }>;
+  clearUserSession(): Promise<UsercentricsReadyStatus>;
+  changeLanguage(options: { language: string }): Promise<void>;
+  setCMPId(options: { id: number }): Promise<void>;
+  setABTestingVariant(options: { variant: string }): Promise<void>;
+  getABTestingVariant(): Promise<{ variant: string | null }>;
+  getCCPAData(): Promise<CCPAData>;
+  getAdditionalConsentModeData(): Promise<AdditionalConsentModeData>;
+  track(options: { event: UsercentricsAnalyticsEventType }): Promise<void>;
 }

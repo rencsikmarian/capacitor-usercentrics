@@ -1,5 +1,6 @@
 import Foundation
 import Capacitor
+import Usercentrics
 import UsercentricsUI
 
 /**
@@ -23,7 +24,16 @@ public class CapacitorUsercentricsPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "applyConsent", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "saveConsent", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "restoreUserSession", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "saveUserSession", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "saveUserSession", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getControllerId", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "clearUserSession", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "changeLanguage", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setCMPId", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setABTestingVariant", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getABTestingVariant", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getCCPAData", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getAdditionalConsentModeData", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "track", returnType: CAPPluginReturnPromise)
     ]
     private let implementation = CapacitorUsercentrics()
 
@@ -180,15 +190,15 @@ public class CapacitorUsercentricsPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func restoreUserSession(_ call: CAPPluginCall) {
-        guard let userSession = call.getString("userSession") else {
-            call.reject("userSession parameter is required")
+        guard let controllerId = call.getString("controllerId") else {
+            call.reject("controllerId parameter is required")
             return
         }
 
-        implementation.restoreUserSession(userSession: userSession) { result in
+        implementation.restoreUserSession(controllerId: controllerId) { result in
             switch result {
-            case .success:
-                call.resolve()
+            case .success(let status):
+                call.resolve(status)
             case .failure(let error):
                 call.reject(error)
             }
@@ -204,5 +214,106 @@ public class CapacitorUsercentricsPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject(error)
             }
         }
+    }
+
+    @objc func getControllerId(_ call: CAPPluginCall) {
+        implementation.getControllerId { result in
+            switch result {
+            case .success(let controllerId):
+                call.resolve(["controllerId": controllerId])
+            case .failure(let error):
+                call.reject(error)
+            }
+        }
+    }
+
+    @objc func clearUserSession(_ call: CAPPluginCall) {
+        implementation.clearUserSession { result in
+            switch result {
+            case .success(let status):
+                call.resolve(status)
+            case .failure(let error):
+                call.reject(error)
+            }
+        }
+    }
+
+    @objc func changeLanguage(_ call: CAPPluginCall) {
+        guard let language = call.getString("language") else {
+            call.reject("language parameter is required")
+            return
+        }
+
+        implementation.changeLanguage(language: language) { result in
+            switch result {
+            case .success:
+                call.resolve()
+            case .failure(let error):
+                call.reject(error)
+            }
+        }
+    }
+
+    @objc func setCMPId(_ call: CAPPluginCall) {
+        guard let id = call.getInt("id") else {
+            call.reject("id parameter is required")
+            return
+        }
+
+        implementation.setCMPId(id: Int32(id))
+        call.resolve()
+    }
+
+    @objc func setABTestingVariant(_ call: CAPPluginCall) {
+        guard let variant = call.getString("variant") else {
+            call.reject("variant parameter is required")
+            return
+        }
+
+        implementation.setABTestingVariant(variant: variant)
+        call.resolve()
+    }
+
+    @objc func getABTestingVariant(_ call: CAPPluginCall) {
+        implementation.getABTestingVariant { result in
+            switch result {
+            case .success(let variant):
+                call.resolve(["variant": variant as Any])
+            case .failure(let error):
+                call.reject(error)
+            }
+        }
+    }
+
+    @objc func getCCPAData(_ call: CAPPluginCall) {
+        implementation.getCCPAData { result in
+            switch result {
+            case .success(let data):
+                call.resolve(data)
+            case .failure(let error):
+                call.reject(error)
+            }
+        }
+    }
+
+    @objc func getAdditionalConsentModeData(_ call: CAPPluginCall) {
+        implementation.getAdditionalConsentModeData { result in
+            switch result {
+            case .success(let data):
+                call.resolve(data)
+            case .failure(let error):
+                call.reject(error)
+            }
+        }
+    }
+
+    @objc func track(_ call: CAPPluginCall) {
+        guard let event = call.getInt("event") else {
+            call.reject("event parameter is required")
+            return
+        }
+
+        implementation.track(event: event)
+        call.resolve()
     }
 }

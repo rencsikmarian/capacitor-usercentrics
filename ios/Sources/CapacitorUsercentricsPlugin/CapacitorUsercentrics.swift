@@ -20,6 +20,10 @@ import UsercentricsUI
     public typealias CMPDataCallback = (Result<[String: Any]>) -> Void
     public typealias TCFDataCallback = (Result<[String: Any]>) -> Void
     public typealias SessionCallback = (Result<String>) -> Void
+    public typealias ControllerIdCallback = (Result<String>) -> Void
+    public typealias VariantCallback = (Result<String?>) -> Void
+    public typealias CCPADataCallback = (Result<[String: Any]>) -> Void
+    public typealias ACMDataCallback = (Result<[String: Any]>) -> Void
 
     public func configure(options: [String: Any], completion: @escaping Callback) {
         guard let settingsId = options["settingsId"] as? String else {
@@ -199,14 +203,26 @@ import UsercentricsUI
         }
     }
 
-    public func restoreUserSession(userSession: String, completion: @escaping Callback) {
+    public func restoreUserSession(controllerId: String, completion: @escaping ReadyCallback) {
         guard let usercentrics = self.usercentrics else {
             completion(.failure("Usercentrics not configured"))
             return
         }
 
-        usercentrics.restoreUserSession(controllerId: usercentrics.getControllerId(), onSuccess: { _ in
-            completion(.success(()))
+        usercentrics.restoreUserSession(controllerId: controllerId, onSuccess: { [weak self] status in
+            guard let self = self else {
+                completion(.failure("Self reference lost"))
+                return
+            }
+
+            let result: [String: Any] = [
+                "shouldCollectConsent": status.shouldCollectConsent,
+                "usercentricsReady": true,
+                "controllerId": usercentrics.getControllerId(),
+                "consents": self.convertConsents(status.consents)
+            ]
+
+            completion(.success(result))
         }, onFailure: { error in
             completion(.failure(error.localizedDescription))
         })
@@ -264,6 +280,111 @@ import UsercentricsUI
         }
         _ = usercentrics.saveDecisions(decisions: decisions, consentType: .explicit_)
         completion(.success(()))
+    }
+
+    public func getControllerId(completion: @escaping ControllerIdCallback) {
+        guard let usercentrics = self.usercentrics else {
+            completion(.failure("Usercentrics not configured"))
+            return
+        }
+        completion(.success(usercentrics.getControllerId()))
+    }
+
+    public func clearUserSession(completion: @escaping ReadyCallback) {
+        UsercentricsCore.shared.clearUserSession(onSuccess: { [weak self] status in
+            guard let self = self else {
+                completion(.failure("Self reference lost"))
+                return
+            }
+
+            let result: [String: Any] = [
+                "shouldCollectConsent": status.shouldCollectConsent,
+                "usercentricsReady": true,
+                "controllerId": UsercentricsCore.shared.getControllerId(),
+                "consents": self.convertConsents(status.consents)
+            ]
+
+            self.usercentrics = UsercentricsCore.shared
+
+            completion(.success(result))
+        }, onError: { error in
+            completion(.failure(error.localizedDescription))
+        })
+    }
+
+    public func changeLanguage(language: String, completion: @escaping Callback) {
+        guard let usercentrics = self.usercentrics else {
+            completion(.failure("Usercentrics not configured"))
+            return
+        }
+
+        usercentrics.changeLanguage(language: language, onSuccess: {
+            completion(.success(()))
+        }, onFailure: { error in
+            completion(.failure(error.localizedDescription))
+        })
+    }
+
+    public func setCMPId(id: Int32) {
+        UsercentricsCore.shared.setCMPId(id: id)
+    }
+
+    public func setABTestingVariant(variant: String) {
+        UsercentricsCore.shared.setABTestingVariant(variantName: variant)
+    }
+
+    public func getABTestingVariant(completion: @escaping VariantCallback) {
+        guard let usercentrics = self.usercentrics else {
+            completion(.failure("Usercentrics not configured"))
+            return
+        }
+        completion(.success(usercentrics.getABTestingVariant()))
+    }
+
+    public func getCCPAData(completion: @escaping CCPADataCallback) {
+        guard let usercentrics = self.usercentrics else {
+            completion(.failure("Usercentrics not configured"))
+            return
+        }
+
+        let uspData = usercentrics.getUSPData()
+        let result: [String: Any] = [
+            "version": uspData.version,
+            "uspString": uspData.uspString,
+            "optedOut": uspData.optedOut as Any,
+            "lspact": uspData.lspact as Any,
+            "noticeGiven": uspData.noticeGiven as Any
+        ]
+        completion(.success(result))
+    }
+
+    public func getAdditionalConsentModeData(completion: @escaping ACMDataCallback) {
+        guard let usercentrics = self.usercentrics else {
+            completion(.failure("Usercentrics not configured"))
+            return
+        }
+
+        let acmData = usercentrics.getAdditionalConsentModeData()
+        var providers: [[String: Any]] = []
+        for provider in acmData.adTechProviders {
+            providers.append([
+                "id": provider.id,
+                "name": provider.name,
+                "privacyPolicyUrl": provider.privacyPolicyUrl,
+                "consent": provider.consent
+            ])
+        }
+
+        let result: [String: Any] = [
+            "acString": acmData.acString,
+            "adTechProviders": providers
+        ]
+        completion(.success(result))
+    }
+
+    public func track(event: Int) {
+        guard let eventType = UsercentricsAnalyticsEventType.values().get(index: Int32(event)) else { return }
+        UsercentricsCore.shared.track(event: eventType)
     }
 
     // Helper method to convert consents to dictionary format

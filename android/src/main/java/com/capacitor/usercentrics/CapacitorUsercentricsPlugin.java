@@ -143,13 +143,17 @@ public class CapacitorUsercentricsPlugin extends Plugin {
 
     @PluginMethod
     public void restoreUserSession(PluginCall call) {
-        String userSession = call.getString("userSession");
+        String controllerId = call.getString("controllerId");
+        if (controllerId == null) {
+            call.reject("controllerId parameter is required");
+            return;
+        }
         implementation.restoreUserSession(
-            userSession,
-            new CapacitorUsercentrics.Callback() {
+            controllerId,
+            new CapacitorUsercentrics.ReadyCallback() {
                 @Override
-                public void onSuccess() {
-                    call.resolve();
+                public void onSuccess(JSObject status) {
+                    call.resolve(status);
                 }
 
                 @Override
@@ -255,5 +259,150 @@ public class CapacitorUsercentricsPlugin extends Plugin {
                 }
             }
         );
+    }
+
+    @PluginMethod
+    public void getControllerId(PluginCall call) {
+        implementation.getControllerId(
+            new CapacitorUsercentrics.ControllerIdCallback() {
+                @Override
+                public void onSuccess(String controllerId) {
+                    JSObject result = new JSObject();
+                    result.put("controllerId", controllerId);
+                    call.resolve(result);
+                }
+
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
+            }
+        );
+    }
+
+    @PluginMethod
+    public void clearUserSession(PluginCall call) {
+        implementation.clearUserSession(
+            new CapacitorUsercentrics.ReadyCallback() {
+                @Override
+                public void onSuccess(JSObject status) {
+                    call.resolve(status);
+                }
+
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
+            }
+        );
+    }
+
+    @PluginMethod
+    public void changeLanguage(PluginCall call) {
+        String language = call.getString("language");
+        if (language == null) {
+            call.reject("language parameter is required");
+            return;
+        }
+        implementation.changeLanguage(
+            language,
+            new CapacitorUsercentrics.Callback() {
+                @Override
+                public void onSuccess() {
+                    call.resolve();
+                }
+
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
+            }
+        );
+    }
+
+    @PluginMethod
+    public void setCMPId(PluginCall call) {
+        Integer id = call.getInt("id");
+        if (id == null) {
+            call.reject("id parameter is required");
+            return;
+        }
+        implementation.setCMPId(id);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void setABTestingVariant(PluginCall call) {
+        String variant = call.getString("variant");
+        if (variant == null) {
+            call.reject("variant parameter is required");
+            return;
+        }
+        implementation.setABTestingVariant(variant);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void getABTestingVariant(PluginCall call) {
+        implementation.getABTestingVariant(
+            new CapacitorUsercentrics.VariantCallback() {
+                @Override
+                public void onSuccess(String variant) {
+                    JSObject result = new JSObject();
+                    result.put("variant", variant);
+                    call.resolve(result);
+                }
+
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
+            }
+        );
+    }
+
+    @PluginMethod
+    public void getCCPAData(PluginCall call) {
+        implementation.getCCPAData(
+            new CapacitorUsercentrics.CMPDataCallback() {
+                @Override
+                public void onSuccess(JSObject data) {
+                    call.resolve(data);
+                }
+
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
+            }
+        );
+    }
+
+    @PluginMethod
+    public void getAdditionalConsentModeData(PluginCall call) {
+        implementation.getAdditionalConsentModeData(
+            new CapacitorUsercentrics.CMPDataCallback() {
+                @Override
+                public void onSuccess(JSObject data) {
+                    call.resolve(data);
+                }
+
+                @Override
+                public void onError(String error) {
+                    call.reject(error);
+                }
+            }
+        );
+    }
+
+    @PluginMethod
+    public void track(PluginCall call) {
+        Integer event = call.getInt("event");
+        if (event == null) {
+            call.reject("event parameter is required");
+            return;
+        }
+        implementation.track(event);
+        call.resolve();
     }
 }

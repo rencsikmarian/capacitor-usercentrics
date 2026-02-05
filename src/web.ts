@@ -6,6 +6,9 @@ import type {
   UsercentricsReadyStatus,
   UsercentricsBannerResult,
   UsercentricsConsent,
+  CCPAData,
+  AdditionalConsentModeData,
+  UsercentricsAnalyticsEventType,
 } from './definitions';
 
 export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUsercentricsPlugin {
@@ -149,12 +152,28 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
     return this.usercentrics.getTCFData();
   }
 
-  async restoreUserSession(userSession: string): Promise<void> {
+  async restoreUserSession(options: { controllerId: string }): Promise<UsercentricsReadyStatus> {
     if (!this.isConfigured || !this.usercentrics) {
       throw new Error('Usercentrics not configured');
     }
 
-    this.usercentrics.restoreUserSession(userSession);
+    return new Promise((resolve, reject) => {
+      this.usercentrics.restoreUserSession(
+        options.controllerId,
+        (status: any) => {
+          const result: UsercentricsReadyStatus = {
+            shouldCollectConsent: status.shouldCollectConsent,
+            consents: this.convertConsents(status.consents),
+            usercentricsReady: status.usercentricsReady,
+            controllerId: status.controllerId,
+          };
+          resolve(result);
+        },
+        (error: string) => {
+          reject(error);
+        },
+      );
+    });
   }
 
   async saveUserSession(): Promise<{ session: string }> {
@@ -196,6 +215,109 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
     if (typeof this.usercentrics.saveDecisions === 'function') {
       this.usercentrics.saveDecisions(decisions, 'explicit');
     }
+  }
+
+  async getControllerId(): Promise<{ controllerId: string }> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    const controllerId = this.usercentrics.getControllerId();
+    return { controllerId };
+  }
+
+  async clearUserSession(): Promise<UsercentricsReadyStatus> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+
+    return new Promise((resolve, reject) => {
+      this.usercentrics.clearUserSession(
+        (status: any) => {
+          const result: UsercentricsReadyStatus = {
+            shouldCollectConsent: status.shouldCollectConsent,
+            consents: this.convertConsents(status.consents),
+            usercentricsReady: status.usercentricsReady,
+            controllerId: status.controllerId,
+          };
+          resolve(result);
+        },
+        (error: string) => {
+          reject(error);
+        },
+      );
+    });
+  }
+
+  async changeLanguage(options: { language: string }): Promise<void> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+
+    return new Promise((resolve, reject) => {
+      this.usercentrics.changeLanguage(
+        options.language,
+        () => {
+          resolve();
+        },
+        (error: string) => {
+          reject(error);
+        },
+      );
+    });
+  }
+
+  async setCMPId(options: { id: number }): Promise<void> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    this.usercentrics.setCMPId(options.id);
+  }
+
+  async setABTestingVariant(options: { variant: string }): Promise<void> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    this.usercentrics.setABTestingVariant(options.variant);
+  }
+
+  async getABTestingVariant(): Promise<{ variant: string | null }> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    const variant = this.usercentrics.getABTestingVariant();
+    return { variant: variant || null };
+  }
+
+  async getCCPAData(): Promise<CCPAData> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    const uspData = this.usercentrics.getUSPData();
+    return {
+      version: uspData.version,
+      uspString: uspData.uspString,
+      optedOut: uspData.optedOut,
+      lspact: uspData.lspact,
+      noticeGiven: uspData.noticeGiven,
+    };
+  }
+
+  async getAdditionalConsentModeData(): Promise<AdditionalConsentModeData> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    const acmData = this.usercentrics.getAdditionalConsentModeData();
+    return {
+      acString: acmData.acString,
+      adTechProviders: acmData.adTechProviders || [],
+    };
+  }
+
+  async track(options: { event: UsercentricsAnalyticsEventType }): Promise<void> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    this.usercentrics.track(options.event);
   }
 
   private convertConsents(consents: any[]): UsercentricsConsent[] {
