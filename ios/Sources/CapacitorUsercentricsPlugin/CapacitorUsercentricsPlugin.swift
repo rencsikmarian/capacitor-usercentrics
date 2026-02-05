@@ -56,7 +56,13 @@ public class CapacitorUsercentricsPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func configure(_ call: CAPPluginCall) {
-        guard let options = call.getObject("options") else {
+        let options: [String: Any]
+        if let nestedOptions = call.getObject("options") {
+            options = nestedOptions
+        } else if call.getString("settingsId") != nil {
+            // Support direct options without nesting
+            options = call.options as? [String: Any] ?? [:]
+        } else {
             call.reject("Options parameter is required")
             return
         }
