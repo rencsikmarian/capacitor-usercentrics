@@ -1,6 +1,6 @@
 {
   "name": "capacitor-usercentrics",
-  "version": "0.1.1",
+  "version": "8.1.1",
   "iosPackageVersion": "2.24.4",
   "description": "usercentrics capacitor plugin",
   "main": "dist/plugin.cjs.js",
