@@ -3,14 +3,14 @@ import PackageDescription
 
 let package = Package(
     name: "CapacitorUsercentrics",
-    platforms: [.iOS(.v14)],
+    platforms: [.iOS(.v15)],
     products: [
         .library(
             name: "CapacitorUsercentrics",
             targets: ["CapacitorUsercentricsPlugin"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "7.0.0"),
+        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.0.0"),
         .package(url: "https://bitbucket.org/usercentricscode/usercentrics-spm-ui.git", from: "2.24.4")
     ],
     targets: [
