@@ -6,8 +6,14 @@ import type {
   UsercentricsReadyStatus,
   UsercentricsBannerResult,
   UsercentricsConsent,
+  UsercentricsConsentsResult,
+  UsercentricsConsentType,
+  UsercentricsCMPData,
+  TCFData,
+  UserDecision,
   CCPAData,
   AdditionalConsentModeData,
+  GppData,
   UsercentricsAnalyticsEventType,
 } from './definitions';
 
@@ -127,16 +133,16 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
     });
   }
 
-  async getConsents(): Promise<UsercentricsConsent[]> {
+  async getConsents(): Promise<UsercentricsConsentsResult> {
     if (!this.isConfigured || !this.usercentrics) {
       throw new Error('Usercentrics not configured');
     }
 
     const consents = this.usercentrics.getConsents();
-    return this.convertConsents(consents);
+    return { consents: this.convertConsents(consents) };
   }
 
-  async getCMPData(): Promise<any> {
+  async getCMPData(): Promise<UsercentricsCMPData> {
     if (!this.isConfigured || !this.usercentrics) {
       throw new Error('Usercentrics not configured');
     }
@@ -144,7 +150,7 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
     return this.usercentrics.getCMPData();
   }
 
-  async getTCFData(): Promise<any> {
+  async getTCFData(): Promise<TCFData> {
     if (!this.isConfigured || !this.usercentrics) {
       throw new Error('Usercentrics not configured');
     }
@@ -184,18 +190,54 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
     return { session: this.usercentrics.saveUserSession() };
   }
 
-  async acceptAll(): Promise<void> {
+  async getUserSessionData(): Promise<{ session: string }> {
+    return this.saveUserSession();
+  }
+
+  async acceptAll(): Promise<UsercentricsConsentsResult> {
     if (!this.isConfigured || !this.usercentrics) {
       throw new Error('Usercentrics not configured');
     }
     this.usercentrics.acceptAll();
+    return { consents: this.convertConsents(this.usercentrics.getConsents()) };
   }
 
-  async denyAll(): Promise<void> {
+  async acceptAllForTCF(): Promise<UsercentricsConsentsResult> {
+    throw new Error('acceptAllForTCF is not supported on web');
+  }
+
+  async denyAll(): Promise<UsercentricsConsentsResult> {
     if (!this.isConfigured || !this.usercentrics) {
       throw new Error('Usercentrics not configured');
     }
     this.usercentrics.denyAll();
+    return { consents: this.convertConsents(this.usercentrics.getConsents()) };
+  }
+
+  async denyAllForTCF(): Promise<UsercentricsConsentsResult> {
+    throw new Error('denyAllForTCF is not supported on web');
+  }
+
+  async saveDecisions(options: {
+    decisions: UserDecision[];
+    consentType?: UsercentricsConsentType;
+  }): Promise<UsercentricsConsentsResult> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    const decisions = options.decisions.map((d) => ({ templateId: d.serviceId, status: d.consent }));
+    if (typeof this.usercentrics.saveDecisions === 'function') {
+      this.usercentrics.saveDecisions(decisions, options.consentType ?? 'explicit');
+    }
+    return { consents: this.convertConsents(this.usercentrics.getConsents()) };
+  }
+
+  async saveDecisionsForTCF(): Promise<UsercentricsConsentsResult> {
+    throw new Error('saveDecisionsForTCF is not supported on web');
+  }
+
+  async saveOptOutForCCPA(): Promise<UsercentricsConsentsResult> {
+    throw new Error('saveOptOutForCCPA is not supported on web');
   }
 
   async applyConsent(consents: Record<string, UsercentricsConsent>): Promise<void> {
@@ -311,6 +353,52 @@ export class CapacitorUsercentricsWeb extends WebPlugin implements CapacitorUser
       acString: acmData.acString,
       adTechProviders: acmData.adTechProviders || [],
     };
+  }
+
+  async getGPPData(): Promise<GppData> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    if (typeof this.usercentrics.getGPPData !== 'function') {
+      throw new Error('getGPPData is not supported by the Usercentrics web SDK');
+    }
+    const gppData = this.usercentrics.getGPPData();
+    return {
+      gppString: gppData.gppString ?? null,
+      applicableSections: gppData.applicableSections || [],
+      sections: gppData.sections || {},
+    };
+  }
+
+  async getGPPString(): Promise<{ gppString: string | null }> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    if (typeof this.usercentrics.getGPPString !== 'function') {
+      throw new Error('getGPPString is not supported by the Usercentrics web SDK');
+    }
+    return { gppString: this.usercentrics.getGPPString() ?? null };
+  }
+
+  async setGPPConsent(options: { sectionName: string; fieldName: string; value: unknown }): Promise<void> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    if (typeof this.usercentrics.setGPPConsent !== 'function') {
+      throw new Error('setGPPConsent is not supported by the Usercentrics web SDK');
+    }
+    this.usercentrics.setGPPConsent(options.sectionName, options.fieldName, options.value);
+  }
+
+  async getDpsMetadata(options: { templateId: string }): Promise<{ metadata: Record<string, unknown> | null }> {
+    if (!this.isConfigured || !this.usercentrics) {
+      throw new Error('Usercentrics not configured');
+    }
+    if (typeof this.usercentrics.getDpsMetadata !== 'function') {
+      throw new Error('getDpsMetadata is not supported by the Usercentrics web SDK');
+    }
+    const metadata = this.usercentrics.getDpsMetadata(options.templateId);
+    return { metadata: metadata ?? null };
   }
 
   async track(options: { event: UsercentricsAnalyticsEventType }): Promise<void> {

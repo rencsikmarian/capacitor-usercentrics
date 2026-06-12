@@ -6,7 +6,7 @@ import UsercentricsUI
 
     weak var plugin: CapacitorUsercentricsPlugin?
 
-    private var usercentrics: UsercentricsSDK?
+    var usercentrics: UsercentricsSDK?
 
     public enum Result<T> {
         case success(T)
@@ -24,6 +24,8 @@ import UsercentricsUI
     public typealias VariantCallback = (Result<String?>) -> Void
     public typealias CCPADataCallback = (Result<[String: Any]>) -> Void
     public typealias ACMDataCallback = (Result<[String: Any]>) -> Void
+
+    private var gppSectionChangeEvent: UsercentricsDisposableEvent<GppSectionChangePayload>?
 
     public func configure(options: [String: Any], completion: @escaping Callback) {
         guard let settingsId = options["settingsId"] as? String else {
@@ -43,18 +45,7 @@ import UsercentricsUI
             usercentricsOptions.timeoutMillis = timeoutMillis
         }
         if let loggerLevel = options["loggerLevel"] as? String {
-            switch loggerLevel {
-            case "debug":
-                usercentricsOptions.loggerLevel = .debug
-            case "warning":
-                usercentricsOptions.loggerLevel = .warning
-            case "error":
-                usercentricsOptions.loggerLevel = .error
-            case "none":
-                usercentricsOptions.loggerLevel = .none
-            default:
-                break
-            }
+            applyLoggerLevel(loggerLevel, to: usercentricsOptions)
         }
         if let rulesetId = options["rulesetId"] as? String {
             usercentricsOptions.ruleSetId = rulesetId
@@ -62,10 +53,42 @@ import UsercentricsUI
         if let consentMediation = options["consentMediation"] as? Bool {
             usercentricsOptions.consentMediation = consentMediation
         }
+        if let networkMode = options["networkMode"] as? String {
+            applyNetworkMode(networkMode, to: usercentricsOptions)
+        }
+        if let initTimeoutMillis = options["initTimeoutMillis"] as? NSNumber {
+            usercentricsOptions.initTimeoutMillis = initTimeoutMillis.int64Value
+        }
 
         UsercentricsCore.configure(options: usercentricsOptions)
 
         completion(.success(()))
+    }
+
+    private func applyLoggerLevel(_ loggerLevel: String, to usercentricsOptions: UsercentricsOptions) {
+        switch loggerLevel {
+        case "debug":
+            usercentricsOptions.loggerLevel = .debug
+        case "warning":
+            usercentricsOptions.loggerLevel = .warning
+        case "error":
+            usercentricsOptions.loggerLevel = .error
+        case "none":
+            usercentricsOptions.loggerLevel = .none
+        default:
+            break
+        }
+    }
+
+    private func applyNetworkMode(_ networkMode: String, to usercentricsOptions: UsercentricsOptions) {
+        switch networkMode {
+        case "world":
+            usercentricsOptions.networkMode = .world
+        case "eu":
+            usercentricsOptions.networkMode = .eu
+        default:
+            break
+        }
     }
 
     public func isReady(completion: @escaping ReadyCallback) {
@@ -91,76 +114,6 @@ import UsercentricsUI
         })
     }
 
-    public func showBanner(completion: @escaping BannerCallback) {
-        guard self.usercentrics != nil else {
-            completion(.failure("Usercentrics not configured"))
-            return
-        }
-
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else {
-                completion(.failure("Self reference lost"))
-                return
-            }
-
-            guard let viewController = self.plugin?.getRootVC() else {
-                completion(.failure("No root view controller available"))
-                return
-            }
-
-            let banner = UsercentricsBanner()
-            banner.showFirstLayer(hostView: viewController) { [weak self] response in
-                guard let self = self else {
-                    completion(.failure("Self reference lost"))
-                    return
-                }
-
-                let result: [String: Any] = [
-                    "userInteraction": String(describing: response.userInteraction),
-                    "controllerId": response.controllerId,
-                    "consents": self.convertConsents(response.consents)
-                ]
-
-                completion(.success(result))
-            }
-        }
-    }
-
-    public func showSecondLayer(completion: @escaping BannerCallback) {
-        guard let _ = self.usercentrics else {
-            completion(.failure("Usercentrics not configured"))
-            return
-        }
-
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else {
-                completion(.failure("Self reference lost"))
-                return
-            }
-
-            guard let viewController = self.plugin?.getRootVC() else {
-                completion(.failure("No root view controller available"))
-                return
-            }
-
-            let banner = UsercentricsBanner()
-            banner.showSecondLayer(hostView: viewController) { [weak self] response in
-                guard let self = self else {
-                    completion(.failure("Self reference lost"))
-                    return
-                }
-
-                let result: [String: Any] = [
-                    "userInteraction": String(describing: response.userInteraction),
-                    "controllerId": response.controllerId,
-                    "consents": self.convertConsents(response.consents)
-                ]
-
-                completion(.success(result))
-            }
-        }
-    }
-
     public func getConsents(completion: @escaping ConsentsCallback) {
         guard let usercentrics = self.usercentrics else {
             completion(.failure("Usercentrics not configured"))
@@ -179,7 +132,7 @@ import UsercentricsUI
         }
 
         let cmpData = usercentrics.getCMPData()
-        completion(.success(["cmpData": cmpData]))
+        completion(.success(cmpData.toDictionary()))
     }
 
     public func getTCFData(completion: @escaping TCFDataCallback) {
@@ -188,18 +141,8 @@ import UsercentricsUI
             return
         }
 
-        usercentrics.getTCFData { tcf in
-            let result: [String: Any] = [
-                "tcString": tcf.tcString,
-                "features": tcf.features,
-                "purposes": tcf.purposes,
-                "specialFeatures": tcf.specialFeatures,
-                "specialPurposes": tcf.specialPurposes,
-                "stacks": tcf.stacks,
-                "thirdPartyCount": tcf.thirdPartyCount,
-                "vendors": tcf.vendors
-            ]
-            completion(.success(result))
+        usercentrics.getTCFData { tcfData in
+            completion(.success(tcfData.toDictionary()))
         }
     }
 
@@ -238,26 +181,8 @@ import UsercentricsUI
         completion(.success(session))
     }
 
-    public func acceptAll(completion: @escaping Callback) {
-        guard let usercentrics = self.usercentrics else {
-            completion(.failure("Usercentrics not configured"))
-            return
-        }
-        _ = usercentrics.acceptAll(consentType: .explicit_)
-        completion(.success(()))
-    }
-
-    public func denyAll(completion: @escaping Callback) {
-        guard let usercentrics = self.usercentrics else {
-            completion(.failure("Usercentrics not configured"))
-            return
-        }
-        _ = usercentrics.denyAll(consentType: .explicit_)
-        completion(.success(()))
-    }
-
     public func applyConsent(consents: [String: Any], completion: @escaping Callback) {
-        guard let _ = self.usercentrics else {
+        guard self.usercentrics != nil else {
             completion(.failure("Usercentrics not configured"))
             return
         }
@@ -341,63 +266,94 @@ import UsercentricsUI
         completion(.success(usercentrics.getABTestingVariant()))
     }
 
-    public func getCCPAData(completion: @escaping CCPADataCallback) {
-        guard let usercentrics = self.usercentrics else {
-            completion(.failure("Usercentrics not configured"))
-            return
-        }
-
-        let uspData = usercentrics.getUSPData()
-        let result: [String: Any] = [
-            "version": uspData.version,
-            "uspString": uspData.uspString,
-            "optedOut": uspData.optedOut as Any,
-            "lspact": uspData.lspact as Any,
-            "noticeGiven": uspData.noticeGiven as Any
-        ]
-        completion(.success(result))
-    }
-
-    public func getAdditionalConsentModeData(completion: @escaping ACMDataCallback) {
-        guard let usercentrics = self.usercentrics else {
-            completion(.failure("Usercentrics not configured"))
-            return
-        }
-
-        let acmData = usercentrics.getAdditionalConsentModeData()
-        var providers: [[String: Any]] = []
-        for provider in acmData.adTechProviders {
-            providers.append([
-                "id": provider.id,
-                "name": provider.name,
-                "privacyPolicyUrl": provider.privacyPolicyUrl,
-                "consent": provider.consent
-            ])
-        }
-
-        let result: [String: Any] = [
-            "acString": acmData.acString,
-            "adTechProviders": providers
-        ]
-        completion(.success(result))
-    }
-
     public func track(event: Int) {
         guard let eventType = UsercentricsAnalyticsEventType.values().get(index: Int32(event)) else { return }
         UsercentricsCore.shared.track(event: eventType)
     }
 
     // Helper method to convert consents to dictionary format
-    private func convertConsents(_ consents: [UsercentricsServiceConsent]) -> [[String: Any]] {
+    func convertConsents(_ consents: [UsercentricsServiceConsent]) -> [[String: Any]] {
         return consents.map { consent in
             return [
                 "templateId": consent.templateId,
                 "status": consent.status,
-                "type": consent.type?.description(),
+                "type": consent.type?.description().lowercased() as Any,
                 "dataProcessor": consent.dataProcessor,
                 "version": consent.version,
                 "isEssential": consent.isEssential
             ]
+        }
+    }
+}
+
+// MARK: - GPP and DPS metadata (Usercentrics SDK 2.26.1+)
+extension CapacitorUsercentrics {
+
+    public typealias GppDataCallback = (Result<[String: Any]>) -> Void
+    public typealias GppStringCallback = (Result<String?>) -> Void
+    public typealias DpsMetadataCallback = (Result<[String: Any]?>) -> Void
+
+    public func getGPPData(completion: @escaping GppDataCallback) {
+        guard let usercentrics = self.usercentrics else {
+            completion(.failure("Usercentrics not configured"))
+            return
+        }
+
+        let gppData = usercentrics.getGPPData()
+        let result: [String: Any] = [
+            "gppString": gppData.gppString as Any,
+            "applicableSections": gppData.applicableSections,
+            "sections": bridgeGppValue(gppData.sections)
+        ]
+        completion(.success(result))
+    }
+
+    public func getGPPString(completion: @escaping GppStringCallback) {
+        guard let usercentrics = self.usercentrics else {
+            completion(.failure("Usercentrics not configured"))
+            return
+        }
+        completion(.success(usercentrics.getGPPString()))
+    }
+
+    public func setGPPConsent(sectionName: String, fieldName: String, value: Any, completion: @escaping Callback) {
+        guard let usercentrics = self.usercentrics else {
+            completion(.failure("Usercentrics not configured"))
+            return
+        }
+        usercentrics.setGPPConsent(sectionName: sectionName, fieldName: fieldName, value: value)
+        completion(.success(()))
+    }
+
+    public func getDpsMetadata(templateId: String, completion: @escaping DpsMetadataCallback) {
+        guard let usercentrics = self.usercentrics else {
+            completion(.failure("Usercentrics not configured"))
+            return
+        }
+        completion(.success(usercentrics.getDpsMetadata(templateId: templateId)))
+    }
+
+    public func startGppSectionChangeListener(onSectionChange: @escaping ([String: Any]) -> Void) {
+        guard gppSectionChangeEvent == nil else { return }
+        gppSectionChangeEvent = UsercentricsEvent.shared.onGppSectionChange { payload in
+            onSectionChange(["data": payload.data])
+        }
+    }
+
+    public func stopGppSectionChangeListener() {
+        gppSectionChangeEvent?.dispose()
+        gppSectionChangeEvent = nil
+    }
+
+    // Recursively converts SDK GPP structures into plist-compatible values for the bridge
+    private func bridgeGppValue(_ value: Any) -> Any {
+        switch value {
+        case let dictionary as [String: Any]:
+            return dictionary.mapValues { bridgeGppValue($0) }
+        case let array as [Any]:
+            return array.map { bridgeGppValue($0) }
+        default:
+            return value
         }
     }
 }

@@ -1,7 +1,7 @@
 {
   "name": "capacitor-usercentrics",
-  "version": "8.1.1",
-  "iosPackageVersion": "2.24.4",
+  "version": "8.2.0",
+  "iosPackageVersion": "2.27.0",
   "description": "usercentrics capacitor plugin",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
@@ -54,6 +54,7 @@
     "@ionic/eslint-config": "^0.4.0",
     "@ionic/prettier-config": "^4.0.0",
     "@ionic/swiftlint-config": "^2.0.0",
+    "@types/node": "^24.13.2",
     "eslint": "^8.57.1",
     "prettier": "^3.6.2",
     "prettier-plugin-java": "^2.7.7",

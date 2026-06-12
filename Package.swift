@@ -11,7 +11,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.0.0"),
-        .package(url: "https://bitbucket.org/usercentricscode/usercentrics-spm-ui.git", from: "2.24.4")
+        .package(url: "https://bitbucket.org/usercentricscode/usercentrics-spm-ui.git", from: "2.27.0")
     ],
     targets: [
         .target(
